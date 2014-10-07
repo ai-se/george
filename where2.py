@@ -166,7 +166,8 @@ multiple solutions.
 """
 def where2(m, data, lvl=0, up=None):
   node = o(val=None,_up=up,_kids=[])
-  def tooDeep(): return lvl > The.what.depthMax
+  def tooDeep():
+	return lvl > The.what.depthMax
   def tooFew() : return len(data) < The.what.minSize
   def show(suffix): 
     if The.verbose: 
@@ -255,6 +256,7 @@ def some(m,x) :
 def scores(m,it):
   "Score an individual."
   if not it.scored:
+    #need for this line
     m.eval(m,it)
     new, w = 0, 0
     for c in m.objectives:
@@ -267,6 +269,21 @@ def scores(m,it):
     it.score = (new**0.5) / (w**0.5)
     it.scored = True
   return it.score
+
+def launchWhere2(m):
+  m= m()
+  seed(1)
+  told=N()
+  for r in m._rows:
+    s =  scores(m,r)
+    told += s
+  global The
+  The=defaults().update(verbose = True,
+               minSize = len(m._rows)**0.5,
+               prune   = False,
+               wriggle = 0.3*told.sd())
+  return where2(m, m._rows)
+
 """
 
 ## Tree Code
@@ -366,7 +383,7 @@ def _distances(m=nasa93):
 ### A Demo for  Where2.
 
 """
-@go
+#@go
 def _where(m=nasa93):
   m= m()
   seed(1)
