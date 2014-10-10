@@ -11,6 +11,8 @@ from where2 import *
 from utils import *
 import numpy as np
 
+TREE_VERBOSE=False;
+
 class InterpolatedDataSet:
   def __init__(i, dataset=None) :
     if (dataset == None) :
@@ -21,9 +23,8 @@ class InterpolatedDataSet:
     return len(i.dataset)
 
 def launchInterpolate(m, dataset):
-  tree = launchWhere2(m)
+  tree = launchWhere2(m,TREE_VERBOSE)
   interpolate(tree, dataset)
-  print len(dataset)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
   return data(indep=INDEP, less= LESS, _rows=dataList)
@@ -68,7 +69,17 @@ def getMinMax(rows):
   min_cols = matrix.min(axis=0)
   return max_cols, min_cols
 
+def interpolateNTimes(initialData, interpolationCount=1):
+  # interpolates the dataset to 2^(interpolationCount)
+  timesInterpolated = 0
+  while timesInterpolated < interpolationCount:
+    dataset = InterpolatedDataSet()
+    initialData = launchInterpolate(initialData, dataset)
+    timesInterpolated += 1
+  #print len(dataset)
+  launchWhere2(initialData, True)
+  return initialData
+
 @go
 def _interpolate():
-  dataset = InterpolatedDataSet()
-  print(launchInterpolate(nasa93, dataset))
+  interpolateNTimes(nasa93(), 2)

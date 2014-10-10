@@ -164,7 +164,7 @@ WHERE2 returns clusters, where each cluster contains
 multiple solutions.
 
 """
-def where2(m, data, lvl=0, up=None):
+def where2(m, data, lvl=0, up=None, verbose=True):
   node = o(val=None,_up=up,_kids=[])
   def tooDeep():
 	return lvl > The.what.depthMax
@@ -174,17 +174,19 @@ def where2(m, data, lvl=0, up=None):
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
   if tooDeep() or tooFew():
-    show(".")
+    if verbose:
+      show(".")	
     node.val = data
   else:
-    show("")
+    if verbose:
+      show("")
     wests,west, easts,east,c = fastmap(m,data)
     node.update(c=c,east=east,west=west)
     goLeft, goRight = maybePrune(m,lvl,west,east)
     if goLeft: 
-      node._kids += [where2(m, wests, lvl+1, node)]
+      node._kids += [where2(m, wests, lvl+1, node, verbose=verbose)]
     if goRight: 
-      node._kids += [where2(m, easts,  lvl+1, node)]
+      node._kids += [where2(m, easts,  lvl+1, node, verbose=verbose)]
   return node
 """
 
@@ -270,8 +272,7 @@ def scores(m,it):
     it.scored = True
   return it.score
 
-def launchWhere2(m):
-  m= m()
+def launchWhere2(m, verbose=True):
   seed(1)
   told=N()
   for r in m._rows:
@@ -282,7 +283,7 @@ def launchWhere2(m):
                minSize = len(m._rows)**0.5,
                prune   = False,
                wriggle = 0.3*told.sd())
-  return where2(m, m._rows)
+  return where2(m, m._rows,verbose = verbose)
 
 """
 
