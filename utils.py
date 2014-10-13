@@ -10,4 +10,11 @@ LESS = ['effort', 'defects', 'months']
 
 DATATYPES = [int for x in range(22)] + [float for x in range(4)]
  
-
+class ExtendedDataset:
+  def __init__(i, dataset=None) :
+    if (dataset == None) :
+      i.dataset = set()
+    else : 
+      i.dataset = None
+  def __len__(i):
+    return len(i.dataset)

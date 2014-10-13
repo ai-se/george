@@ -13,15 +13,6 @@ import numpy as np
 
 TREE_VERBOSE=False;
 
-class InterpolatedDataSet:
-  def __init__(i, dataset=None) :
-    if (dataset == None) :
-      i.dataset = set()
-    else :
-      i.dataset = None
-  def __len__(i):
-    return len(i.dataset)
-
 def launchInterpolate(m, dataset):
   tree = launchWhere2(m,TREE_VERBOSE)
   interpolate(tree, dataset)
@@ -30,11 +21,9 @@ def launchInterpolate(m, dataset):
   return data(indep=INDEP, less= LESS, _rows=dataList)
 
 def interpolate(tree, dataset):
-  if len(tree._kids) > 0:
-    for node in tree._kids:
-      interpolate(node, dataset)
-  else:
-    generateDuplicates(tree.val, dataset)
+  leaf_nodes = leaves(tree)
+  for node in leaf_nodes:
+    generateDuplicates(node[0].val, dataset)
 
 def generateDuplicates(rows, dataset):
   maxSampling = 2 * len(rows)
@@ -73,11 +62,11 @@ def interpolateNTimes(initialData, interpolationCount=1):
   # interpolates the dataset to 2^(interpolationCount)
   timesInterpolated = 0
   while timesInterpolated < interpolationCount:
-    dataset = InterpolatedDataSet()
+    dataset = ExtendedDataset()
     initialData = launchInterpolate(initialData, dataset)
     timesInterpolated += 1
-  #print len(dataset)
-  launchWhere2(initialData, True)
+  print len(dataset)
+  launchWhere2(initialData,True)
   return initialData
 
 @go
