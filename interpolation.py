@@ -36,7 +36,7 @@ def generateDuplicates(rows, dataset):
     
 def createHybrid(originals):
   def mergeData(index):
-    return x[index] + rNum * max(x[index],y[index]) - min(x[index],y[index])
+    return x[index] + rNum * (max(x[index],y[index]) - min(x[index],y[index]))
   rNum = random.random()
   x = originals[0].cells
   y = originals[1].cells

@@ -18,7 +18,7 @@ def launchExtrapolate(m, dataset):
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
   return data(indep=INDEP, less= LESS, _rows=dataList)
-
+  
 def getLeafNodes(tree):
   leafNodes = []
   for node in leaves(tree):
