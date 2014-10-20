@@ -12,6 +12,8 @@ from utils import *
 import numpy as np
 
 TREE_VERBOSE=False;
+USE_NEIGHBORS=True;
+
 
 def launchExtrapolate(m, dataset):
   extrapolate(m, dataset)
@@ -25,6 +27,12 @@ def getLeafNodes(tree):
     leafNodes.append(node)
   return leafNodes
 
+def getNeighborNodes(node):
+  neighborNodes = []
+  for node in neighbors(node):
+    neighborNodes.append(node)
+  return neighborNodes
+
 def extrapolate(m, dataset):
   tree = launchWhere2(m, TREE_VERBOSE)
   leaf_nodes = getLeafNodes(tree)
@@ -32,9 +40,23 @@ def extrapolate(m, dataset):
     max_extrapolation = 2*len(m._rows)
     extrapolationCount = 0
     while extrapolationCount < max_extrapolation:
-      rClusters = random.sample(leaf_nodes,2)
+      if USE_NEIGHBORS :
+        rClusters = randomNeighbors(leaf_nodes)     
+      else :
+        rClusters = random.sample(leaf_nodes,2)
+      if (rClusters == None):
+        continue
       generateDuplicates(rClusters[0][0].val, rClusters[1][0].val, dataset)
       extrapolationCount += 1
+
+def randomNeighbors(leaf_nodes):
+  neighbor_leaves = getNeighborNodes(random.choice(leaf_nodes)[0])
+  if (len(neighbor_leaves) == 0): 
+    return None
+  elif (len(neighbor_leaves) == 1):
+    return [neighbor_leaves[0], neighbor_leaves[0]]
+  else:
+    return random.sample(neighbor_leaves,2)
 
 def generateDuplicates(clusterA, clusterB, dataset):
   randChoice = random.choice([1,2])
