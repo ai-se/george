@@ -9,13 +9,20 @@ from nasa93 import *
 from settings import *
 from where2 import *
 from utils import *
+import time
 import numpy as np
 
 TREE_VERBOSE=False;
 USE_NEIGHBORS=True;
 
+class Statics():
+  neighborMap = dict()
 
+def getTime():
+  return round(time.time()*1000,4)
+ 
 def launchExtrapolate(m, dataset):
+  Statics.neighborMap = dict()
   extrapolate(m, dataset)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
@@ -28,9 +35,14 @@ def getLeafNodes(tree):
   return leafNodes
 
 def getNeighborNodes(node):
+  
+  neighborNodes = Statics.neighborMap.get(id(node))
+  if (neighborNodes):
+    return neighborNodes
   neighborNodes = []
-  for node in neighbors(node):
-    neighborNodes.append(node)
+  for neigh_node in neighbors(node):
+    neighborNodes.append(neigh_node)
+  Statics.neighborMap[id(node)] = neighborNodes
   return neighborNodes
 
 def extrapolate(m, dataset):
@@ -102,3 +114,10 @@ def extrapolateNTimes(initialData, extrapolationCount=1):
 @go
 def _extrapolate():
   extrapolateNTimes(nasa93(), 2)
+
+#@go
+def _test():
+  for k in range(1,10):
+    startTime = getTime()  
+    extrapolateNTimes(nasa93(), k)
+    print(getTime()-startTime)
