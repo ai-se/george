@@ -41,7 +41,30 @@ def fastmap(m,data):
   mid   = len(lst)//2
   wests = map(second,lst[:mid])
   easts = map(second,lst[mid:])
-  return wests,west, easts,east,c
+  # Projection of midpoint, used for future testing
+  mid_cosine = lst[mid][0]
+  return wests,west, easts,east,c, mid_cosine
+
+ 
+"""
+We select the leaf in which the test node
+belongs by comparing the projection of
+test node between the extreme nodes
+"""
+def leaf(m,one,node):
+  if node._kids:
+    east = node.east
+    west = node.west
+    mid_cos = node.mid_cos
+    a = dist(m,one,west)
+    b = dist(m,one,east)
+    c = dist(m,west,east)
+    x = (a*a + c*c - b*b)/(2*c)
+    if (x<mid_cos):
+      return leaf(m,one,node._kids[0])
+    else:
+      return leaf(m,one,node._kids[1])
+  return node
 """
 
 In the above:
@@ -102,6 +125,14 @@ And of course, _closest_:
 """
 def closest(m,i,all):
   return furthest(m,i,all,init=10**32,better=lt)
+
+def closestN(m,n,i,all):
+  tmp = []
+  for j in all:
+    if id(i) == id(j): continue
+    d = dist(m,i,j)
+    tmp += [ (d,j) ]
+  return sorted(tmp)[-1*n:]
 """
 
 ## WHERE2 = Recursive Fastmap
@@ -180,14 +211,15 @@ def where2(m, data, lvl=0, up=None, verbose=True):
   else:
     if verbose:
       show("")
-    wests,west, easts,east,c = fastmap(m,data)
-    node.update(c=c,east=east,west=west)
+    wests,west, easts,east,c, mid_cos = fastmap(m,data)
+    node.update(c=c,east=east,west=west,mid_cos=mid_cos)
     goLeft, goRight = maybePrune(m,lvl,west,east)
     if goLeft: 
       node._kids += [where2(m, wests, lvl+1, node, verbose=verbose)]
     if goRight: 
       node._kids += [where2(m, easts,  lvl+1, node, verbose=verbose)]
   return node
+
 """
 
 ## An Experimental Extensions
@@ -272,25 +304,26 @@ def scores(m,it):
     it.scored = True
   return it.score
 
-def launchWhere2(m, verbose=True):
+def launchWhere2(m, rows=None, verbose=True):
   seed(1)
   told=N()
-  for r in m._rows:
+  if (not rows):
+    rows = m._rows
+  for r in rows:
     s =  scores(m,r)
     told += s
   global The
   The=defaults().update(verbose = True,
-               minSize = len(m._rows)**0.5,
+               minSize = len(rows)**0.5,
                prune   = False,
                wriggle = 0.3*told.sd())
-  return where2(m, m._rows,verbose = verbose)
+  return where2(m, rows,verbose = verbose)
 
 """
 
 ## Tree Code
 
 Tools for manipulating the tree returned by _where2_.
-
 ### Primitive: Walk the nodes
 
 """
@@ -345,6 +378,7 @@ def around(leaf, f=lambda x: x):
     last = dist
   if tmp:
     yield last,tmp
+
 """
 ## Demo Code
 

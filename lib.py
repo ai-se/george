@@ -88,7 +88,7 @@ class Cache:
   def has(i):
     if i._has == None:
       lst  = sorted(i.all)
-      med,iqr = medianIQR(i.all,ordered=True)
+      med,iqr = medianIQR(lst,ordered=True)
       i._has = o(
         median = med,      iqr = iqr,
         lo     = i.all[0], hi  = i.all[-1])
