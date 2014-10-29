@@ -1,4 +1,4 @@
-|Size(2^k)|Without Memoization(ms)|With Memoization|
+|Size(2^k)|Without Memoization(ms)|With Memoization(ms)|
 |:---|:---|:---|
 |1|52.32|42.41|
 |2|202.24|140.94|
