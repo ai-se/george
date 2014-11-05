@@ -1,5 +1,6 @@
-Interpolation And Extrapolation of NASA93 dataset
-======
+##TestRig
+Import testRig.py in any python file and call testRig(dataset) with parameters dataset in the format of nasa93 object<br/>
+
 
 Interpolation
 ------
