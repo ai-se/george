@@ -7,6 +7,8 @@
 |8|5.61|20.74|0.54|0.76|
 |16|4.40|13.55|0.48|0.74|
 
+#####Crashes For nasa93 * 32 since all the records in a cluster are same and dist(west,east) = 0(divide by 0 error)
+
 
 ###Extrapolation
 |Size(k*nasa93)|Median-knn|IQR-knn|Median-clusterk1|IQR-clusterk1|
