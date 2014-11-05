@@ -19,3 +19,5 @@
 |8|3.34|8.72|0.71|1.02|
 |16|4.63|11.16|0.54|0.82|
 |32|5.26|17.12|0.60|0.92|
+
+#####Crashes For nasa93 * 64 since all the records in a cluster are same and dist(west,east) = 0(divide by 0 error)
