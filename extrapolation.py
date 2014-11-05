@@ -21,9 +21,9 @@ class Statics():
 def getTime():
   return round(time.time()*1000,4)
  
-def launchExtrapolate(m, dataset):
+def launchExtrapolate(m, dataset, rows=None, extrapolationCount=1):
   Statics.neighborMap = dict()
-  extrapolate(m, dataset)
+  extrapolate(m, dataset, rows,extrapolationCount)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
   return data(indep=INDEP, less= LESS, _rows=dataList)
@@ -35,7 +35,6 @@ def getLeafNodes(tree):
   return leafNodes
 
 def getNeighborNodes(node):
-  
   neighborNodes = Statics.neighborMap.get(id(node))
   if (neighborNodes):
     return neighborNodes
@@ -45,12 +44,12 @@ def getNeighborNodes(node):
   Statics.neighborMap[id(node)] = neighborNodes
   return neighborNodes
 
-def extrapolate(m, dataset):
-  tree = launchWhere2(m, TREE_VERBOSE)
+def extrapolate(m, dataset, rows=None,extrapolationCount=1):
+  tree = launchWhere2(m, rows=rows, verbose=TREE_VERBOSE)
   leaf_nodes = getLeafNodes(tree)
   if len(leaf_nodes)>0:
-    max_extrapolation = 2*len(m._rows)
-    extrapolationCount = 0
+    max_extrapolation = (2**extrapolationCount)*len(m._rows)
+    extrapolatiounCount = 0
     while extrapolationCount < max_extrapolation:
       if USE_NEIGHBORS :
         rClusters = randomNeighbors(leaf_nodes)     
@@ -58,7 +57,8 @@ def extrapolate(m, dataset):
         rClusters = random.sample(leaf_nodes,2)
       if (rClusters == None):
         continue
-      generateDuplicates(rClusters[0][0].val, rClusters[1][0].val, dataset)
+      generateDuplicates(rClusters[0][0].val, rClusters[0][0].val, dataset)
+      #generateDuplicates(rClusters[0][0].val, rClusters[1][0].val, dataset)
       extrapolationCount += 1
 
 def randomNeighbors(leaf_nodes):
@@ -100,20 +100,27 @@ def getMinMax(rows):
   min_cols = matrix.min(axis=0)
   return max_cols, min_cols
 
-def extrapolateNTimes(initialData, extrapolationCount=1):
+def extrapolateNTimes(initialModel, rows=None, extrapolationCount=1):
   # extrapolates the dataset to 2^(extrapolationCount)
+  random.seed(1)
+  if  extrapolationCount == 0:
+    return initialModel
+  initialModel = launchExtrapolate(initialModel, ExtendedDataset(), rows, extrapolationCount)
+  '''
   timesExtrapolated = 0
   while timesExtrapolated < extrapolationCount:
     dataset = ExtendedDataset()
-    initialData = launchExtrapolate(initialData, dataset)
+    if (timesExtrapolated != 0):
+      rows = initialModel._rows
+    initialModel = launchExtrapolate(initialModel, dataset, rows)
     timesExtrapolated += 1
-  print len(dataset)
-  launchWhere2(initialData, True)
-  return initialData
+  #print len(dataset)'''
+  #launchWhere2(initialModel, verbose=True)
+  return initialModel
 
-@go
+#@go
 def _extrapolate():
-  extrapolateNTimes(nasa93(), 2)
+  extrapolateNTimes(nasa93(), extrapolationCount=2)
 
 #@go
 def _test():

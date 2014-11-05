@@ -13,20 +13,20 @@ import numpy as np
 
 TREE_VERBOSE=False;
 
-def launchInterpolate(m, dataset):
-  tree = launchWhere2(m,TREE_VERBOSE)
-  interpolate(tree, dataset)
+def launchInterpolate(m, dataset, rows=None, interpolationCount=1):
+  tree = launchWhere2(m, rows, verbose=TREE_VERBOSE)
+  interpolate(tree, dataset, interpolationCount)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
   return data(indep=INDEP, less= LESS, _rows=dataList)
 
-def interpolate(tree, dataset):
+def interpolate(tree, dataset,interpolationCount=1):
   leaf_nodes = leaves(tree)
   for node in leaf_nodes:
-    generateDuplicates(node[0].val, dataset)
+    generateDuplicates(node[0].val, dataset,interpolationCount)
 
-def generateDuplicates(rows, dataset):
-  maxSampling = 2 * len(rows)
+def generateDuplicates(rows, dataset,interpolationCount=1):
+  maxSampling = (2**interpolationCount) * len(rows)
   sampleIndex = 0
   #max_cols, min_cols = getMinMax(rows)
   while (sampleIndex < maxSampling) :
@@ -58,17 +58,26 @@ def getMinMax(rows):
   min_cols = matrix.min(axis=0)
   return max_cols, min_cols
 
-def interpolateNTimes(initialData, interpolationCount=1):
+def interpolateNTimes(initialModel, rows=None, interpolationCount=1):
   # interpolates the dataset to 2^(interpolationCount)
+  random.seed(1)
+  if  interpolationCount == 0:
+    return initialModel
+  initialModel = launchInterpolate(initialModel, ExtendedDataset(), rows, interpolationCount)
+  #launchWhere2(initialModel, verbose=True)
+  return initialModel
+  '''
   timesInterpolated = 0
   while timesInterpolated < interpolationCount:
     dataset = ExtendedDataset()
-    initialData = launchInterpolate(initialData, dataset)
+    if timesInterpolated != 0:
+      rows=initialModel._rows
+    initialModel = launchInterpolate(initialModel, dataset, rows)
     timesInterpolated += 1
-  print len(dataset)
-  launchWhere2(initialData,True)
-  return initialData
+  #print len(dataset)
+  #launchWhere2(initialModel,verbose=True)
+  return initialModel'''
 
-@go
+#@go
 def _interpolate():
-  interpolateNTimes(nasa93(), 2)
+   interpolateNTimes(nasa93(), interpolationCount=2)
