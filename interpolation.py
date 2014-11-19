@@ -12,9 +12,10 @@ from utils import *
 import numpy as np
 
 TREE_VERBOSE=False;
+CLUSTERER = launchWhereV3;
 
 def launchInterpolate(m, dataset, rows=None, interpolationCount=1):
-  tree = launchWhere2(m, rows, verbose=TREE_VERBOSE)
+  tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE)
   interpolate(tree, dataset, interpolationCount)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]

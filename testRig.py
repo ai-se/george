@@ -7,6 +7,11 @@ from where2 import *
 from interpolation import *
 from extrapolation import *
 
+DUPLICATION_SIZE = 5
+CLUSTERER = launchWhereV3
+GET_CLUSTER = leafV3
+DUPLICATOR = extrapolateNTimes
+
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -35,22 +40,22 @@ def formatForCART(test,trains,
   return trainInputSet, trainOutputSet, indep(test), dep(test)
 
 def testRig(dataset=nasa93(), duplicator=interpolateNTimes):
+  rseed(1)
   def effort(row):
-      return row.cells[-3]
+    return row.cells[-3]
   scores=dict(clusterk1=N(),knn=N(),CART=N())
   for score in scores.values():
-    score.go=False
-  scores['CART'].go = True
+    score.go=True
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(test)
-    duplicatedModel = duplicator(dataset, train, 6) 
-    tree = launchWhere2(duplicatedModel, rows=None, verbose=False)
+    duplicatedModel = duplicator(dataset, train, DUPLICATION_SIZE) 
+    tree = CLUSTERER(duplicatedModel, rows=None, verbose=False)
     """
     Selecting the closest cluster and the closest row
     """ 
     def clusterk1(score):
-      test_leaf = leaf(duplicatedModel, test, tree)
+      test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
       nearest_row = closest(duplicatedModel, test, test_leaf.val)
       test_effort = effort(nearest_row)
       error = abs(desired_effort - test_effort)/desired_effort
@@ -66,10 +71,16 @@ def testRig(dataset=nasa93(), duplicator=interpolateNTimes):
       score += abs(desired_effort - test_effort)/desired_effort
     
     def CART(score):
-      trainIp, trainOp, testIp, testOp = formatForCART(test,duplicatedModel._rows);
+      if DUPLICATION_SIZE == 0:
+        cartIP = train
+      else:
+        cartIP = duplicatedModel._rows
+      trainIp, trainOp, testIp, testOp = formatForCART(test,cartIP);
+      #print(len(trainIp))
       decTree = DecisionTreeClassifier(criterion="entropy", random_state=1)
       decTree.fit(trainIp,trainOp)
-      test_effort = decTree.predict(testIp)
+      test_effort = decTree.predict(testIp)[0]
+      #print(test_effort, desired_effort)
       score += abs(desired_effort - test_effort)/desired_effort
 
     n = scores["clusterk1"]
@@ -85,5 +96,4 @@ def testRig(dataset=nasa93(), duplicator=interpolateNTimes):
         ":median",n.cache.has().median,
         ":has",n.cache.has().iqr)
         
-#testRig()
-testRig(duplicator=extrapolateNTimes)
+testRig(duplicator=DUPLICATOR)

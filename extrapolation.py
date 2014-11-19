@@ -12,8 +12,9 @@ from utils import *
 import time
 import numpy as np
 
-TREE_VERBOSE=False;
-USE_NEIGHBORS=True;
+TREE_VERBOSE=False
+USE_NEIGHBORS=True
+CLUSTERER = launchWhereV3
 
 class Statics():
   neighborMap = dict()
@@ -45,7 +46,7 @@ def getNeighborNodes(node):
   return neighborNodes
 
 def extrapolate(m, dataset, rows=None,extrapolationCount=1):
-  tree = launchWhere2(m, rows=rows, verbose=TREE_VERBOSE)
+  tree = CLUSTERER(m, rows=rows, verbose=TREE_VERBOSE)
   leaf_nodes = getLeafNodes(tree)
   if len(leaf_nodes)>0:
     max_extrapolation = (2**extrapolationCount)*len(m._rows)

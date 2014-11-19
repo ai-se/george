@@ -23,17 +23,17 @@ Project data in N dimensions down to a single dimension connecting
 twp distant points. Divide that data at the median of those projects.
 
 """
-def fastmap(m,data):
+def fastmap(m,data, what=lambda m: m.decisions):
   "Divide data into two using distance to two distant items."
   one  = any(data)             # 1) pick anything
-  west = furthest(m,one,data)  # 2) west is as far as you can go from anything
-  east = furthest(m,west,data) # 3) east is as far as you can go from west
-  c    = dist(m,west,east)
+  west = furthest(m,one,data, what = what)  # 2) west is as far as you can go from anything
+  east = furthest(m,west,data, what = what) # 3) east is as far as you can go from west
+  c    = dist(m,west,east, what = what)
   # now find everyone's distance
   lst = []
   for one in data:
-    a = dist(m,one,west)
-    b = dist(m,one,east)
+    a = dist(m,one,west, what = what)
+    b = dist(m,one,east, what = what)
     x = (a*a + c*c - b*b)/(2*c) # cosine rule
     y = max(0, a**2 - x**2)**0.5 # not used, here for a demo
     lst  += [(x,one)]
@@ -65,10 +65,9 @@ def leaf(m,one,node):
     else:
       return leaf(m,one,node._kids[1])
   return node
+
+
 """
-
-In the above:
-
 + _m_ is some model that generates candidate
   solutions that we wish to niche.
 + _(west,east)_ are not _the_ most distant points
@@ -76,6 +75,32 @@ In the above:
   calculations). But they are at least very distant
   to each other.
 
+We select the leaf in which the test node
+belongs by comparing the projection of
+test node between the extreme nodes
+but this time we alternate between decisions
+and objectives respectively
+"""
+def leafV3(m,one,node, clstrByDcsn=True):
+  if node._kids:
+    east = node.east
+    west = node.west
+    mid_cos = node.mid_cos
+    if clstrByDcsn:
+      what = lambda m: m.decisions
+    else :
+      what = lambda m: m.objectives
+    a = dist(m,one,west,what)
+    b = dist(m,one,east,what)
+    c = dist(m,west,east, what)
+    x = (a*a + c*c - b*b)/(2*c)
+    if (x<mid_cos):
+      return leafV3(m,one,node._kids[0], not clstrByDcsn)
+    else:
+      return leafV3(m,one,node._kids[1], not clstrByDcsn)
+  return node
+
+"""
 This code needs some helper functions. _Dist_ uses
 the standard Euclidean measure. Note that you tune
 what it uses to define the niches (decisions or
@@ -109,12 +134,13 @@ Now we can define _furthest_:
 """
 def furthest(m,i,all,
              init = 0,
-             better = gt):
+             better = gt,
+						 what = lambda m:m.decisions):
   "find which of all is furthest from 'i'"
   out,d= i,init
   for j in all:
     if i == j: continue
-    tmp = dist(m,i,j)
+    tmp = dist(m,i,j,what)
     if better(tmp,d): 
       out,d = j,tmp
   return out
@@ -198,7 +224,7 @@ multiple solutions.
 def where2(m, data, lvl=0, up=None, verbose=True):
   node = o(val=None,_up=up,_kids=[])
   def tooDeep():
-	return lvl > The.what.depthMax
+		return lvl > The.what.depthMax
   def tooFew() : return len(data) < The.what.minSize
   def show(suffix): 
     if The.verbose: 
@@ -219,6 +245,40 @@ def where2(m, data, lvl=0, up=None, verbose=True):
     if goRight: 
       node._kids += [where2(m, easts,  lvl+1, node, verbose=verbose)]
   return node
+
+"""
+whereV3 returns clusters similar to where2 but
+alternatively clusters between decisions and objectives RESPECTIVELY
+"""
+def whereV3(m, data, lvl=0, up=None,clstrByDcsn=True, verbose=True):
+  node = o(val=None,_up=up,_kids=[])
+  def tooDeep() :
+		return lvl > The.what.depthMax
+  def tooFew() : return len(data) < The.what.minSize
+  def show(suffix): 
+    if The.verbose: 
+      print(The.what.b4*lvl,len(data),
+            suffix,' ; ',id(node) % 1000,sep='')
+  if tooDeep() or tooFew():
+    if verbose:
+      show(".")	
+    node.val = data
+  else:
+    if verbose:
+      show("")
+    if clstrByDcsn:
+      what = lambda m: m.decisions
+    else :
+      what = lambda m: m.objectives
+    wests,west, easts,east,c, mid_cos = fastmap(m,data, what)
+    node.update(c=c,east=east,west=west,mid_cos=mid_cos)
+    goLeft, goRight = maybePrune(m,lvl,west,east)
+    if goLeft: 
+      node._kids += [whereV3(m, wests, lvl+1, node, not clstrByDcsn, verbose=verbose)]
+    if goRight: 
+      node._kids += [whereV3(m, easts,  lvl+1, node, not clstrByDcsn, verbose=verbose)]
+  return node
+
 
 """
 
@@ -318,6 +378,21 @@ def launchWhere2(m, rows=None, verbose=True):
                prune   = False,
                wriggle = 0.3*told.sd())
   return where2(m, rows,verbose = verbose)
+
+def launchWhereV3(m, rows=None, verbose=True, clstrByDcsn=False):
+  seed(1)
+  told=N()
+  if (not rows):
+    rows = m._rows
+  for r in rows:
+    s =  scores(m,r)
+    told += s
+  global The
+  The=defaults().update(verbose = True,
+               minSize = len(rows)**0.5,
+               prune   = False,
+               wriggle = 0.3*told.sd())
+  return whereV3(m, rows,verbose = verbose, clstrByDcsn=clstrByDcsn)
 
 """
 
@@ -420,7 +495,7 @@ def _distances(m=nasa93):
 """
 #@go
 def _where(m=nasa93):
-  m= m()
+  m= m();print(m)
   seed(1)
   told=N()
   for r in m._rows:
@@ -432,17 +507,3 @@ def _where(m=nasa93):
                prune   = False,
                wriggle = 0.3*told.sd())
   tree = where2(m, m._rows)
-  n=0
-  for node,_ in leaves(tree):
-    m  = len(node.val)
-    #print(m,' ',end="")
-    n += m
-    print(id(node) % 1000, ' ',end='')
-    for near,dist in neighbors(node):
-      print(dist,id(near) % 1000,' ',end='')
-    print("")
-  print(n)
-  filter = lambda z: id(z) % 1000
-  for node,_ in leaves(tree):
-    print(filter(node), 
-          [x for x in around(node,filter)])
