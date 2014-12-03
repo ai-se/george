@@ -14,7 +14,7 @@ import numpy as np
 
 TREE_VERBOSE=False
 USE_NEIGHBORS=True
-CLUSTERER = launchWhereV3
+CLUSTERER = launchWhere2
 
 class Statics():
   neighborMap = dict()

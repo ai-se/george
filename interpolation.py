@@ -13,6 +13,7 @@ import numpy as np
 
 TREE_VERBOSE=False;
 CLUSTERER = launchWhereV3;
+CLUSTER_ON_DECISION = True;
 
 def launchInterpolate(m, dataset, rows=None, interpolationCount=1):
   tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE)

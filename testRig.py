@@ -7,9 +7,10 @@ from where2 import *
 from interpolation import *
 from extrapolation import *
 
-DUPLICATION_SIZE = 5
+DUPLICATION_SIZE = 3
 CLUSTERER = launchWhereV3
 GET_CLUSTER = leafV3
+#DUPLICATOR = extrapolateNTimes
 DUPLICATOR = extrapolateNTimes
 
 """

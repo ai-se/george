@@ -15,6 +15,7 @@ sys.dont_write_bytecode = True
 from lib import *
 from nasa93 import *
 
+CLSTR_BY_DEC = True;
 """
 
 ## Dimensionality Reduction with Fastmp
@@ -42,8 +43,10 @@ def fastmap(m,data, what=lambda m: m.decisions):
   wests = map(second,lst[:mid])
   easts = map(second,lst[mid:])
   # Projection of midpoint, used for future testing
-  mid_cosine = lst[mid][0]
-  return wests,west, easts,east,c, mid_cosine
+  mid_element = lst[mid]
+  west = wests[0]
+  east = easts[-1]
+  return wests,west, easts,east,c, mid_element
 
  
 """
@@ -81,23 +84,33 @@ test node between the extreme nodes
 but this time we alternate between decisions
 and objectives respectively
 """
-def leafV3(m,one,node, clstrByDcsn=True):
+def leafV3(m,one,node, clstrByDcsn=CLSTR_BY_DEC):
   if node._kids:
     east = node.east
     west = node.west
     mid_cos = node.mid_cos
     if clstrByDcsn:
       what = lambda m: m.decisions
+      a = dist(m,one,west,what)
+      b = dist(m,one,east,what)
+      c = dist(m,west,east, what)
+      x = (a*a + c*c - b*b)/(2*c)
+      if (x<mid_cos):
+        return leafV3(m,one,node._kids[0], not clstrByDcsn)
+      else:
+        return leafV3(m,one,node._kids[1], not clstrByDcsn)  
     else :
-      what = lambda m: m.objectives
-    a = dist(m,one,west,what)
-    b = dist(m,one,east,what)
-    c = dist(m,west,east, what)
-    x = (a*a + c*c - b*b)/(2*c)
-    if (x<mid_cos):
-      return leafV3(m,one,node._kids[0], not clstrByDcsn)
-    else:
-      return leafV3(m,one,node._kids[1], not clstrByDcsn)
+      # TODO find nearest centroid
+      #what = lambda m: m.objectives
+      what = lambda m: m.decisions
+      leftKids = node._kids[0]
+      rightKids = node._kids[1]
+      a = abs(dist(m, one,leftKids.median_row, what))
+      b = abs(dist(m, one,leftKids.median_row, what))
+      if (a < b):
+        return leafV3(m,one,node._kids[0], not clstrByDcsn)
+      else:
+        return leafV3(m,one,node._kids[1], not clstrByDcsn)
   return node
 
 """
@@ -230,6 +243,7 @@ def where2(m, data, lvl=0, up=None, verbose=True):
     if The.verbose: 
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
+  node.median_row = data[len(data)//2]
   if tooDeep() or tooFew():
     if verbose:
       show(".")	
@@ -237,8 +251,8 @@ def where2(m, data, lvl=0, up=None, verbose=True):
   else:
     if verbose:
       show("")
-    wests,west, easts,east,c, mid_cos = fastmap(m,data)
-    node.update(c=c,east=east,west=west,mid_cos=mid_cos)
+    wests,west, easts,east,c, mid_element = fastmap(m,data)
+    node.update(c=c,east=east,west=west,mid_cos=mid_element[0])
     goLeft, goRight = maybePrune(m,lvl,west,east)
     if goLeft: 
       node._kids += [where2(m, wests, lvl+1, node, verbose=verbose)]
@@ -250,7 +264,7 @@ def where2(m, data, lvl=0, up=None, verbose=True):
 whereV3 returns clusters similar to where2 but
 alternatively clusters between decisions and objectives RESPECTIVELY
 """
-def whereV3(m, data, lvl=0, up=None,clstrByDcsn=True, verbose=True):
+def whereV3(m, data, lvl=0, up=None,clstrByDcsn=CLSTR_BY_DEC, verbose=True):
   node = o(val=None,_up=up,_kids=[])
   def tooDeep() :
 		return lvl > The.what.depthMax
@@ -259,6 +273,7 @@ def whereV3(m, data, lvl=0, up=None,clstrByDcsn=True, verbose=True):
     if The.verbose: 
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
+  node.median_row = data[len(data)//2]
   if tooDeep() or tooFew():
     if verbose:
       show(".")	
@@ -270,8 +285,8 @@ def whereV3(m, data, lvl=0, up=None,clstrByDcsn=True, verbose=True):
       what = lambda m: m.decisions
     else :
       what = lambda m: m.objectives
-    wests,west, easts,east,c, mid_cos = fastmap(m,data, what)
-    node.update(c=c,east=east,west=west,mid_cos=mid_cos)
+    wests,west, easts,east,c, mid_element = fastmap(m,data, what)
+    node.update(c=c,east=east,west=west,mid_cos=mid_element[0])
     goLeft, goRight = maybePrune(m,lvl,west,east)
     if goLeft: 
       node._kids += [whereV3(m, wests, lvl+1, node, not clstrByDcsn, verbose=verbose)]
@@ -379,7 +394,7 @@ def launchWhere2(m, rows=None, verbose=True):
                wriggle = 0.3*told.sd())
   return where2(m, rows,verbose = verbose)
 
-def launchWhereV3(m, rows=None, verbose=True, clstrByDcsn=False):
+def launchWhereV3(m, rows=None, verbose=True, clstrByDcsn=CLSTR_BY_DEC):
   seed(1)
   told=N()
   if (not rows):
