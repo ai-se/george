@@ -8,10 +8,12 @@ from interpolation import *
 from extrapolation import *
 
 DUPLICATION_SIZE = 3
-CLUSTERER = launchWhereV3
-GET_CLUSTER = leafV3
+CLUSTERER = launchWhere2
+GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
-DUPLICATOR = extrapolateNTimes
+DUPLICATOR = interpolateNTimes
+DO_TUNE = False
+
 
 """
 Creates a generator of 1 test record 
@@ -40,7 +42,7 @@ def formatForCART(test,trains,
     trainOutputSet+=[dep(train)]
   return trainInputSet, trainOutputSet, indep(test), dep(test)
 
-def testRig(dataset=nasa93(), duplicator=interpolateNTimes):
+def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes):
   rseed(1)
   def effort(row):
     return row.cells[-3]

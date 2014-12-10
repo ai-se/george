@@ -13,8 +13,8 @@ from  lib import *
 Data:
 
 """
-def nasa93():
-  vl=1;l=2;n=3;h=4;vh=5;xh=6
+def nasa93(doTune = False):
+  vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8
      'Prec', 'Flex', 'Resl', 'Team', 'Pmat', 'rely', 'data', 'cplx', 'ruse',
@@ -117,7 +117,17 @@ def nasa93():
       [h,h,h,vh,n,h,n,vh,n,n,vh,vh,h,n,n,n,n,l,l,n,n,n,16.3,480,1253,21.5],
       [h,h,h,vh,n,h,n,vh,n,n,vh,vh,h,n,n,n,n,l,l,n,n,n,  6.2, 12,477,15.4],
       [h,h,h,vh,n,h,n,vh,n,n,vh,vh,h,n,n,n,n,l,l,n,n,n,  3.0, 38,231,12.0],
-    ])
+    ],
+    _tunings =[[
+    #         vlow  low   nom   high  vhigh xhigh
+    #scale factors:
+    'Prec',   6.20, 4.96, 3.72, 2.48, 1.24, _ ],[
+    'Flex',   5.07, 4.05, 3.04, 2.03, 1.01, _ ],[
+    'Resl',   7.07, 5.65, 4.24, 2.83, 1.41, _ ],[
+    'Pmat',   7.80, 6.24, 4.68, 3.12, 1.56, _ ],[
+    'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
+    _doTune = doTune
+    )
 """
 
 Demo code:

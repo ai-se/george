@@ -252,7 +252,7 @@ Adds in information on _cols_, _decisions_, _hi,lo_, etc:
 Code:
 
 """
-def data(indep=[], less=[], more=[], _rows=[]):
+def data(indep=[], less=[], more=[], _rows=[], _tunings=[], _doTune=False):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -260,10 +260,15 @@ def data(indep=[], less=[], more=[], _rows=[]):
        _rows = [o(cells=r,score=0,scored=False,
                   x0=None,y0=None) 
                 for r in _rows],
-       names = indep+less+more)
+       names = indep+less+more,
+      _tunings = _tunings,
+      _doTune = _doTune)
+  if (_doTune and len(_tunings) != 0):
+    tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]
   m.objectives = [nindep+ x- 1 for x in range(ndep)]
   m.cols       = m.decisions + m.objectives
+  
   for x in m.decisions : 
     m.w[x]=  1
   for y,_ in enumerate(less) : 
@@ -275,6 +280,24 @@ def data(indep=[], less=[], more=[], _rows=[]):
     m.lo[x] = all[0]
     m.hi[x] = all[-1]
   return m
+
+def tuneLOC(m):
+  for row in m._rows:
+    sfs, b = getTuningFactors(m, row.cells)
+    row.cells[22] = row.cells[22]**(b+0.01*sfs)
+
+"""
+Compute tuning factors for LOC based on 
+"""
+    
+def getTuningFactors(m, cells):
+  tunings =  m._tunings
+  sfs = 0
+  b = 0.91
+  for i in range(5):
+    sfs += tunings[i][cells[i]]
+  return sfs,b
+
 """
 
 ## Start-up Actions

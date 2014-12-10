@@ -12,15 +12,16 @@ from utils import *
 import numpy as np
 
 TREE_VERBOSE=False;
-CLUSTERER = launchWhereV3;
-CLUSTER_ON_DECISION = True;
+CLUSTERER = launchWhere2;
+CLUSTER_ON_DECISION = False;
 
 def launchInterpolate(m, dataset, rows=None, interpolationCount=1):
   tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE)
   interpolate(tree, dataset, interpolationCount)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
-  return data(indep=INDEP, less= LESS, _rows=dataList)
+  return data(indep=INDEP, less= LESS, _rows=dataList, 
+              _tunings=m._tunings, _doTune=m._doTune)
 
 def interpolate(tree, dataset,interpolationCount=1):
   leaf_nodes = leaves(tree)
