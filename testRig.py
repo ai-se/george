@@ -17,7 +17,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = JPL
+MODEL = nasa93
 
 
 """
@@ -117,25 +117,25 @@ def testDriver():
   
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"(no tuning)         "] + n.cache.all)
+    skData.append([key+"( no tuning )         "] + n.cache.all)
     
   scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"(Tuning KLOC)       "] + n.cache.all)
+    skData.append([key+"( Tuning KLOC )       "] + n.cache.all)
     
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"(Weighing Norm KLOC)"] + n.cache.all)
+    skData.append([key+"( Weighing Norm KLOC )"] + n.cache.all)
   
   global CLUSTERER
   CLUSTERER = launchWhereV3
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR,clstrByDcsn=False)
   for key,n in scores.items():
-    skData.append([key+"(1st level obj)     "] + n.cache.all)
+    skData.append([key+"( 1st level obj )     "] + n.cache.all)
     
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR,clstrByDcsn=True)
   for key,n in scores.items():
-    skData.append([key+"(2nd level obj)     "] + n.cache.all)
+    skData.append([key+"( 2nd level obj )     "] + n.cache.all)
     
   print("")
   sk.rdivDemo(skData)
