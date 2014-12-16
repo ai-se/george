@@ -71,8 +71,7 @@ def defaults(**d):
              prune   = True,   # pruning enabled?
              b4      = '|.. ', # indent string
              verbose = False,  # show trace info?
-             goal    = lambda m,x : scores(m,x),
-             exp_KLOC = True   # include exponential weight for lines of code
+             goal    = lambda m,x : scores(m,x)
              ),
       seed    = 1,
       cache   = o(size=128)

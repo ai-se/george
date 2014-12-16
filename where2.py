@@ -129,7 +129,7 @@ def dist(m,i,j,
     n1 = norm(m, c, i.cells[c])
     n2 = norm(m, c, j.cells[c])
     #print(getTuningFactors(m, i.cells))
-    if (The.what.exp_KLOC and c == 22) :
+    if (m._weighKLOC and c == 22) :
       b, sfs = getTuningFactors(m, i.cells)
       n1 *= b+0.01*sfs
       b, sfs = getTuningFactors(m, j.cells)

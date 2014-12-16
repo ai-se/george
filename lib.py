@@ -252,7 +252,8 @@ Adds in information on _cols_, _decisions_, _hi,lo_, etc:
 Code:
 
 """
-def data(indep=[], less=[], more=[], _rows=[], _tunings=[], _doTune=False):
+def data(indep=[], less=[], more=[], _rows=[],
+         _tunings=[], _doTune=False, _weighKLOC=False):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -262,7 +263,8 @@ def data(indep=[], less=[], more=[], _rows=[], _tunings=[], _doTune=False):
                 for r in _rows],
        names = indep+less+more,
       _tunings = _tunings,
-      _doTune = _doTune)
+      _doTune = _doTune,
+      _weighKLOC = _weighKLOC)
   if (_doTune and len(_tunings) != 0):
     tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]
@@ -281,6 +283,9 @@ def data(indep=[], less=[], more=[], _rows=[], _tunings=[], _doTune=False):
     m.hi[x] = all[-1]
   return m
 
+"""
+Add tuning coeffecients to LOC
+"""
 def tuneLOC(m):
   for row in m._rows:
     sfs, b = getTuningFactors(m, row.cells)
@@ -297,6 +302,39 @@ def getTuningFactors(m, cells):
   for i in range(5):
     sfs += tunings[i][cells[i]]
   return sfs,b
+
+
+"""The function _xtile_ takes a list of (possibly)
+unsorted numbers and presents them as a horizontal
+xtile chart (in ascii format). The default is a 
+contracted _quintile_ that shows the 
+10,30,50,70,90 breaks in the data (but this can be 
+changed- see the optional flags of the function).
+"""
+def xtile(lst,lo=0,hi=100,width=50,
+             chops=[0.1 ,0.3,0.5,0.7,0.9],
+             marks=["-" ," "," ","-"," "],
+             bar="|",star="*",show=" %3.0f"):
+  def pos(p)   : return ordered[int(len(lst)*p)]
+  def place(x) : 
+    return int(width*float((x - lo))/(hi - lo))
+  def pretty(lst) : 
+    return ', '.join([show % x for x in lst])
+  ordered = sorted(lst)
+  lo      = min(lo,ordered[0])
+  hi      = max(hi,ordered[-1])
+  what    = [pos(p)   for p in chops]
+  where   = [place(n) for n in  what]
+  out     = [" "] * width
+  for one,two in pairs(where):
+    for i in range(one,two): 
+      out[i] = marks[0]
+    marks = marks[1:]
+  out[int(width/2)]    = bar
+  out[place(pos(0.5))] = star 
+  return ''.join(out) +  "," +  pretty(what)
+
+
 
 """
 

@@ -12,11 +12,13 @@ from utils import *
 import numpy as np
 
 TREE_VERBOSE=False;
-CLUSTERER = launchWhere2;
 CLUSTER_ON_DECISION = False;
 
-def launchInterpolate(m, dataset, rows=None, interpolationCount=1):
-  tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE)
+def launchInterpolate(m, dataset, rows=None,  CLUSTERER = launchWhere2, interpolationCount=1, clstrByDcsn=None):
+  if (clstrByDcsn == None):
+    tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE)
+  else :
+    tree = CLUSTERER(m, rows, verbose=TREE_VERBOSE, clstrByDcsn = clstrByDcsn)
   interpolate(tree, dataset, interpolationCount)
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
@@ -61,12 +63,12 @@ def getMinMax(rows):
   min_cols = matrix.min(axis=0)
   return max_cols, min_cols
 
-def interpolateNTimes(initialModel, rows=None, interpolationCount=1):
+def interpolateNTimes(initialModel, rows=None, CLUSTERER = launchWhere2, interpolationCount=1, clstrByDcsn=None):
   # interpolates the dataset to 2^(interpolationCount)
   random.seed(1)
   if  interpolationCount == 0:
     return initialModel
-  initialModel = launchInterpolate(initialModel, ExtendedDataset(), rows, interpolationCount)
+  initialModel = launchInterpolate(initialModel, ExtendedDataset(), rows, CLUSTERER, interpolationCount, clstrByDcsn)
   #launchWhere2(initialModel, verbose=True)
   return initialModel
   '''
