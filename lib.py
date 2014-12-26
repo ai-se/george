@@ -253,7 +253,8 @@ Code:
 
 """
 def data(indep=[], less=[], more=[], _rows=[],
-         _tunings=[], _doTune=False, _weighKLOC=False):
+         _tunings=[], _doTune=False, _weighKLOC=False
+        ,_klocWt = None):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -264,7 +265,8 @@ def data(indep=[], less=[], more=[], _rows=[],
        names = indep+less+more,
       _tunings = _tunings,
       _doTune = _doTune,
-      _weighKLOC = _weighKLOC)
+      _weighKLOC = _weighKLOC,
+      _klocWt = _klocWt)
   if (_doTune and len(_tunings) != 0):
     tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]
@@ -288,8 +290,12 @@ Add tuning coeffecients to LOC
 """
 def tuneLOC(m):
   for row in m._rows:
-    sfs, b = getTuningFactors(m, row.cells)
-    row.cells[22] = row.cells[22]**(b+0.01*sfs)
+    if m._klocWt :
+      b = m._klocWt
+      row.cells[22] = row.cells[22]**(b)
+    else :
+      sfs, b = getTuningFactors(m, row.cells)
+      row.cells[22] = row.cells[22]**(b+0.01*sfs)
 
 """
 Compute tuning factors for LOC based on 

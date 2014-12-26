@@ -17,7 +17,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = nasa93
+MODEL = JPL
 
 
 """
@@ -87,7 +87,8 @@ def CART(score, cartIP, test, desired_effort):
   
 def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrByDcsn = None):
   rseed(1)
-  scores=dict(clstr=N(),CARTT=N())
+  #scores=dict(clstr=N(),CARTT=N())
+  scores=dict(clstr=N())
   for score in scores.values():
     score.go=True
   for test, train in loo(dataset._rows):
@@ -106,8 +107,8 @@ def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrB
     n.go and clusterk1(n, duplicatedModel, tree, test, desired_effort)
     #n = scors[k"]
     #n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
-    n = scores["CARTT"]
-    n.go and CART(n, cartIP, test, desired_effort)
+    #n = scores["CARTT"]
+    #n.go and CART(n, cartIP, test, desired_effort)
   return scores
   
 
@@ -129,15 +130,44 @@ def testDriver():
   
   global CLUSTERER
   CLUSTERER = launchWhereV3
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR,clstrByDcsn=False)
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=False)
   for key,n in scores.items():
     skData.append([key+"( 1st level obj )     "] + n.cache.all)
     
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR,clstrByDcsn=True)
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=True)
   for key,n in scores.items():
     skData.append([key+"( 2nd level obj )     "] + n.cache.all)
     
   print("")
   sk.rdivDemo(skData)
   
-testDriver()
+#testDriver()
+
+def testKLOCWeighDriver():
+  dataset = MODEL(doTune=False, weighKLOC=True)
+  tuneRatio = 0.9
+  skData = [];
+  while(tuneRatio <= 1.2):
+    dataset.tuneRatio = tuneRatio
+    scores = testRig(dataset=dataset,duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([key+"( "+str(tuneRatio)+" )"] + n.cache.all)
+    tuneRatio += 0.01
+  print("")
+  sk.rdivDemo(skData)
+
+#testKLOCWeighDriver()
+
+def testKLOCTuneDriver():
+  tuneRatio = 0.9
+  skData = [];
+  while(tuneRatio <= 1.2):
+    dataset = MODEL(doTune=True, weighKLOC=False, klocWt=tuneRatio)
+    scores = testRig(dataset=dataset,duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([key+"( "+str(tuneRatio)+" )"] + n.cache.all)
+    tuneRatio += 0.01
+  print("")
+  sk.rdivDemo(skData)
+  
+testKLOCTuneDriver()

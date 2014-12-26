@@ -130,15 +130,17 @@ def dist(m,i,j,
     n2 = norm(m, c, j.cells[c])
     #print(getTuningFactors(m, i.cells))
     if (m._weighKLOC and c == 22) :
-      b, sfs = getTuningFactors(m, i.cells)
-      n1 *= b+0.01*sfs
-      b, sfs = getTuningFactors(m, j.cells)
-      n2 *= b+0.01*sfs
-      inc = (n1-n2)**2
-      deltas += inc
+      if m.tuneRatio:
+        inc = ((n1-n2)*m.tuneRatio)**2
+      else:
+        b, sfs = getTuningFactors(m, i.cells)
+        n1 *= b+0.01*sfs
+        b, sfs = getTuningFactors(m, j.cells)
+        n2 *= b+0.01*sfs
+        inc = (n1-n2)**2
     else :
       inc = (n1-n2)**2
-      deltas += inc
+    deltas += inc
     n += abs(m.w[c])
   return deltas**0.5 / n**0.5
 

@@ -13,7 +13,7 @@ from  lib import *
 Data:
 
 """
-def nasa93(doTune = False, weighKLOC=False):
+def nasa93(doTune = False, weighKLOC=False, klocWt=None):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8
@@ -23,7 +23,7 @@ def nasa93(doTune = False, weighKLOC=False):
      # 18 .. 25
      'ltex', 'tool', 'site', 'sced', 'kloc'],
     less = ['effort', 'defects', 'months'],
-    _rows=[
+    _rows = [
       [h,h,h,vh,h,h,l,h,n,n,n,n,l,n,n,n,n,n,h,n,n,l,25.9,117.6,808,15.3],
       [h,h,h,vh,h,h,l,h,n,n,n,n,l,n,n,n,n,n,h,n,n,l,24.6,117.6,767,15.0],
       [h,h,h,vh,h,h,l,h,n,n,n,n,l,n,n,n,n,n,h,n,n,l,7.7,31.2,240,10.1],
@@ -127,7 +127,8 @@ def nasa93(doTune = False, weighKLOC=False):
     'Pmat',   7.80, 6.24, 4.68, 3.12, 1.56, _ ],[
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     _doTune = doTune,
-    _weighKLOC = weighKLOC
+    _weighKLOC = weighKLOC,
+    _klocWt = klocWt
     )
 """
 

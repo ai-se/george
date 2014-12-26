@@ -13,7 +13,7 @@ from  lib import *
 Data:
 
 """
-def coc81(doTune = False, weighKLOC=False):
+def coc81(doTune = False, weighKLOC=False, klocWt=None):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8
@@ -97,7 +97,8 @@ def coc81(doTune = False, weighKLOC=False):
     'Pmat',   7.80, 6.24, 4.68, 3.12, 1.56, _ ],[
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     _doTune = doTune,
-    _weighKLOC = weighKLOC
+    _weighKLOC = weighKLOC,
+    _klocWt = klocWt
     )
 """
 
