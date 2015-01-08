@@ -23,7 +23,8 @@ def launchInterpolate(m, dataset, rows=None,  CLUSTERER = launchWhere2, interpol
   dataList = list(dataset.dataset)
   dataList = [list(dataList[i])for i in range(len(dataList))]
   return data(indep=INDEP, less= LESS, _rows=dataList, 
-              _tunings=m._tunings, _doTune=m._doTune)
+              _tunings=m._tunings, _doTune=m._doTune,
+              _weighKLOC=m.weighKLOC, _klocWt=m.klocWt)
 
 def interpolate(tree, dataset,interpolationCount=1):
   leaf_nodes = leaves(tree)

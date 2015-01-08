@@ -9,6 +9,7 @@ from __future__ import division,print_function
 import  sys,random,math
 sys.dont_write_bytecode = True
 from settings import *
+import sdivUtil
 """
 
 ## Simple, low-level stuff
@@ -254,7 +255,7 @@ Code:
 """
 def data(indep=[], less=[], more=[], _rows=[],
          _tunings=[], _doTune=False, _weighKLOC=False
-        ,_klocWt = None):
+        ,_klocWt = None, _sdivWeigh=False):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -262,27 +263,33 @@ def data(indep=[], less=[], more=[], _rows=[],
        _rows = [o(cells=r,score=0,scored=False,
                   x0=None,y0=None) 
                 for r in _rows],
+       indep = indep,
+       less = less,
+       more = more,
        names = indep+less+more,
       _tunings = _tunings,
       _doTune = _doTune,
       _weighKLOC = _weighKLOC,
-      _klocWt = _klocWt)
+      _klocWt = _klocWt,
+      _sdivWeigh = _sdivWeigh)
   if (_doTune and len(_tunings) != 0):
     tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]
-  m.objectives = [nindep+ x- 1 for x in range(ndep)]
+  m.objectives = [nindep+ x for x in range(ndep)]
   m.cols       = m.decisions + m.objectives
   
   for x in m.decisions : 
     m.w[x]=  1
   for y,_ in enumerate(less) : 
-    m.w[x+y]   = -1
+    m.w[len(m.decisions)+y]   = -1
   for z,_ in enumerate(more) : 
-    m.w[x+y+z] =  1
+    m.w[len(m.decisions)+len(less)+z] =  1
   for x in m.cols:
     all = sorted(row.cells[x] for row in m._rows)
     m.lo[x] = all[0]
     m.hi[x] = all[-1]
+  if _sdivWeigh :
+    sdivUtil.fss(m)
   return m
 
 """

@@ -130,7 +130,7 @@ def dist(m,i,j,
     n2 = norm(m, c, j.cells[c])
     #print(getTuningFactors(m, i.cells))
     if (m._weighKLOC and c == 22) :
-      if m.tuneRatio:
+      if hasattr(m, 'tuneRatio') and m.tuneRatio:
         inc = ((n1-n2)*m.tuneRatio)**2
       else:
         b, sfs = getTuningFactors(m, i.cells)
@@ -138,6 +138,8 @@ def dist(m,i,j,
         b, sfs = getTuningFactors(m, j.cells)
         n2 *= b+0.01*sfs
         inc = (n1-n2)**2
+    elif m._sdivWeigh :
+      inc = (m.weights[c] * (n1 - n2))**2
     else :
       inc = (n1-n2)**2
     deltas += inc

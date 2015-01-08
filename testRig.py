@@ -87,8 +87,8 @@ def CART(score, cartIP, test, desired_effort):
   
 def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrByDcsn = None):
   rseed(1)
-  #scores=dict(clstr=N(),CARTT=N())
-  scores=dict(clstr=N())
+  scores=dict(clstr=N(),CARTT=N())
+  #scores=dict(clstr=N())
   for score in scores.values():
     score.go=True
   for test, train in loo(dataset._rows):
@@ -107,8 +107,8 @@ def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrB
     n.go and clusterk1(n, duplicatedModel, tree, test, desired_effort)
     #n = scors[k"]
     #n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
-    #n = scores["CARTT"]
-    #n.go and CART(n, cartIP, test, desired_effort)
+    n = scores["CARTT"]
+    n.go and CART(n, cartIP, test, desired_effort)
   return scores
   
 
@@ -127,6 +127,10 @@ def testDriver():
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR)
   for key,n in scores.items():
     skData.append([key+"( Weighing Norm KLOC )"] + n.cache.all)
+    
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = True),duplicator=DUPLICATOR)
+  for key,n in scores.items():
+    skData.append([key+"( Weights using sdiv )"] + n.cache.all)
   
   global CLUSTERER
   CLUSTERER = launchWhereV3
@@ -141,7 +145,7 @@ def testDriver():
   print("")
   sk.rdivDemo(skData)
   
-#testDriver()
+testDriver()
 
 def testKLOCWeighDriver():
   dataset = MODEL(doTune=False, weighKLOC=True)
@@ -170,4 +174,4 @@ def testKLOCTuneDriver():
   print("")
   sk.rdivDemo(skData)
   
-testKLOCTuneDriver()
+#testKLOCTuneDriver()
