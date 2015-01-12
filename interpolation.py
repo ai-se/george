@@ -10,6 +10,7 @@ from settings import *
 from where2 import *
 from utils import *
 import numpy as np
+import TEAK
 
 TREE_VERBOSE=False;
 CLUSTER_ON_DECISION = False;

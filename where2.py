@@ -14,6 +14,7 @@ import  sys
 sys.dont_write_bytecode = True
 from lib import *
 from nasa93 import *
+from numpy import var
 
 CLSTR_BY_DEC = True;
 """
@@ -258,6 +259,9 @@ def where2(m, data, lvl=0, up=None, verbose=True):
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
   node.median_row = data[len(data)//2]
+  node.variance = variance(data)
+  if ((not hasattr(m, "max_variance")) or m.max_variance < node.variance):
+    m.max_variance = node.variance
   if tooDeep() or tooFew():
     if verbose:
       show(".")	
@@ -483,6 +487,19 @@ def around(leaf, f=lambda x: x):
   if tmp:
     yield last,tmp
 
+    
+"""
+
+Compute variance of all rows
+
+"""
+
+def variance(rows):
+  efforts = []
+  for row in rows:
+    efforts.append(effort(row))
+  return var(efforts)
+    
 """
 ## Demo Code
 

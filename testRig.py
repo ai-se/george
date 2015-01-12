@@ -2,13 +2,16 @@ from __future__ import division,print_function
 import sys, random, math
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier 
+from sklearn.linear_model import LinearRegression
 from lib import *
 from where2 import *
 from interpolation import *
 from extrapolation import *
 from coc81 import *
 from JPL import *
+from coc2010 import *
 import sk
+import TEAK
 
 
 DUPLICATION_SIZE = 0
@@ -17,7 +20,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = JPL
+MODEL = coc2010
 
 
 """
@@ -48,18 +51,51 @@ def formatForCART(test,trains,
   return trainInputSet, trainOutputSet, indep(test), dep(test)
 
 """
-Effort is the third column in nasa93 dataset
-"""
-def effort(row):
-    return row.cells[-3]
-
-"""
 Selecting the closest cluster and the closest row
 """ 
 def clusterk1(score, duplicatedModel, tree, test, desired_effort):
   test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
   nearest_row = closest(duplicatedModel, test, test_leaf.val)
   test_effort = effort(nearest_row)
+  error = abs(desired_effort - test_effort)/desired_effort
+  #print("clusterk1", test_effort, desired_effort, error)
+  score += error
+
+def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
+  
+  def getTrainData(rows):
+    trainIPs, trainOPs = [], []
+    for row in rows:
+      #trainIPs.append(row.cells[:len(duplicatedModel.indep)])
+      trainIPs.append([row.cosine])
+      trainOPs.append(effort(row))
+    return trainIPs, trainOPs
+  
+  def fastMapper(test_leaf, what = lambda duplicatedModel: duplicatedModel.decisions):
+    data = test_leaf.val
+    one  = any(data)             
+    west = furthest(duplicatedModel,one,data, what = what)  
+    east = furthest(duplicatedModel,west,data, what = what)
+    c    = dist(duplicatedModel,west,east, what = what)
+    test_leaf.west, test_leaf.east, test_leaf.c = west, east, c
+    for one in data:
+      a = dist(duplicatedModel,one,west, what = what)
+      b = dist(duplicatedModel,one,east, what = what)
+      x = (a*a + c*c - b*b)/(2*c) # cosine rule
+      one.cosine = x
+      
+  def getCosine(test_leaf, what = lambda duplicatedModel: duplicatedModel.decisions):
+    a = dist(duplicatedModel,test,test_leaf.west, what = what)
+    b = dist(duplicatedModel,test,test_leaf.east, what = what)
+    return (a*a + test_leaf.c**2 - b*b)/(2*test_leaf.c) # cosine rule
+    
+  test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
+  fastMapper(test_leaf)
+  trainIPs, trainOPs = getTrainData(test_leaf.val)
+  clf = LinearRegression()
+  clf.fit(trainIPs, trainOPs)
+  #test_effort = clf.predict(getCosine(test_leaf))
+  test_effort = clf.predict(getCosine(test_leaf))
   error = abs(desired_effort - test_effort)/desired_effort
   score += error
   
@@ -87,7 +123,8 @@ def CART(score, cartIP, test, desired_effort):
   
 def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrByDcsn = None):
   rseed(1)
-  scores=dict(clstr=N(),CARTT=N())
+  scores=dict(clstr=N(),CARTT=N(), lRgCl=N())
+  #scores=dict(clstr=N(), lRgCl=N())
   #scores=dict(clstr=N())
   for score in scores.values():
     score.go=True
@@ -107,6 +144,8 @@ def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrB
     n.go and clusterk1(n, duplicatedModel, tree, test, desired_effort)
     #n = scors[k"]
     #n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
+    n = scores["lRgCl"]
+    n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
     n = scores["CARTT"]
     n.go and CART(n, cartIP, test, desired_effort)
   return scores
@@ -119,7 +158,7 @@ def testDriver():
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
     skData.append([key+"( no tuning )         "] + n.cache.all)
-    
+  
   scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
     skData.append([key+"( Tuning KLOC )       "] + n.cache.all)
@@ -128,10 +167,23 @@ def testDriver():
   for key,n in scores.items():
     skData.append([key+"( Weighing Norm KLOC )"] + n.cache.all)
     
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = True),duplicator=DUPLICATOR)
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"( Weights using sdiv )"] + n.cache.all)
+    skData.append([key+"( sdiv_weight **  1  )"] + n.cache.all)
+    
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 2),duplicator=DUPLICATOR)
+  for key,n in scores.items():
+    skData.append([key+"( sdiv_weight **  2  )"] + n.cache.all)
   
+  global CLUSTERER
+  CLUSTERER = TEAK.teak
+  global GET_CLUSTER
+  GET_CLUSTER = TEAK.leafTeak
+  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1),duplicator=DUPLICATOR)
+  for key,n in scores.items():
+    skData.append([key+"( TEAK               )"] + n.cache.all)
+  
+  '''
   global CLUSTERER
   CLUSTERER = launchWhereV3
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=False)
@@ -141,7 +193,7 @@ def testDriver():
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=True)
   for key,n in scores.items():
     skData.append([key+"( 2nd level obj )     "] + n.cache.all)
-    
+  '''
   print("")
   sk.rdivDemo(skData)
   
@@ -175,3 +227,5 @@ def testKLOCTuneDriver():
   sk.rdivDemo(skData)
   
 #testKLOCTuneDriver()
+
+#testRig(dataset=MODEL(doTune=False, weighKLOC=False), duplicator=interpolateNTimes, clstrByDcsn = None)

@@ -255,7 +255,7 @@ Code:
 """
 def data(indep=[], less=[], more=[], _rows=[],
          _tunings=[], _doTune=False, _weighKLOC=False
-        ,_klocWt = None, _sdivWeigh=False):
+        ,_klocWt = None, _sdivWeigh=None):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -289,7 +289,7 @@ def data(indep=[], less=[], more=[], _rows=[],
     m.lo[x] = all[0]
     m.hi[x] = all[-1]
   if _sdivWeigh :
-    sdivUtil.fss(m)
+    sdivUtil.fss(m, factor=_sdivWeigh)
   return m
 
 """
@@ -348,6 +348,11 @@ def xtile(lst,lo=0,hi=100,width=50,
   return ''.join(out) +  "," +  pretty(what)
 
 
+"""
+Effort is the third column in nasa93 dataset
+"""
+def effort(row):
+    return row.cells[23]
 
 """
 

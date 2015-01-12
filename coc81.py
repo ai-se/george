@@ -14,7 +14,7 @@ Data:
 
 """
 def coc81(doTune = False, weighKLOC=False, 
-          klocWt=None, sdivWeigh = False):
+          klocWt=None, sdivWeigh = None):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8
