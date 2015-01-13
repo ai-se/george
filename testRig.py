@@ -12,7 +12,7 @@ from JPL import *
 from coc2010 import *
 import sk
 import TEAK
-
+import CoCoMo
 
 DUPLICATION_SIZE = 0
 CLUSTERER = launchWhere2
@@ -21,7 +21,6 @@ GET_CLUSTER = leaf
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
 MODEL = coc2010
-
 
 """
 Creates a generator of 1 test record 
@@ -61,6 +60,10 @@ def clusterk1(score, duplicatedModel, tree, test, desired_effort):
   #print("clusterk1", test_effort, desired_effort, error)
   score += error
 
+"""
+Performing LinearRegression inside a cluster
+to estimate effort
+"""
 def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
   
   def getTrainData(rows):
@@ -94,7 +97,6 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
   trainIPs, trainOPs = getTrainData(test_leaf.val)
   clf = LinearRegression()
   clf.fit(trainIPs, trainOPs)
-  #test_effort = clf.predict(getCosine(test_leaf))
   test_effort = clf.predict(getCosine(test_leaf))
   error = abs(desired_effort - test_effort)/desired_effort
   score += error
@@ -150,18 +152,38 @@ def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrB
     n.go and CART(n, cartIP, test, desired_effort)
   return scores
   
-
+"""
+Test Rig to test CoCoMo for
+a particular dataset
+"""
+def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
+  scores = dict(COCOMO2 = N(), COCONUT= N())
+  tuned_a, tuned_b = CoCoMo.coconut(dataset, dataset._rows)
+  for score in scores.values():
+    score.go=True
+  for row in dataset._rows:
+    say('.')
+    desired_effort = effort(row)
+    test_effort = CoCoMo.cocomo2(dataset, row.cells, a, b)
+    test_effort_tuned = CoCoMo.cocomo2(dataset, row.cells, tuned_a, tuned_b)
+    scores["COCOMO2"] += abs(desired_effort - test_effort)/desired_effort
+    scores["COCONUT"] += abs(desired_effort - test_effort_tuned)/desired_effort
+  return scores
 
 def testDriver():
   skData = [];
+
+  scores = testCoCoMo(dataset=MODEL())
+  for key, n in scores.items():
+    skData.append([key+".                  ."] + n.cache.all)
   
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"( no tuning )         "] + n.cache.all)
+    skData.append([key+"( no tuning          )"] + n.cache.all)
   
   scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False),duplicator=DUPLICATOR)
   for key,n in scores.items():
-    skData.append([key+"( Tuning KLOC )       "] + n.cache.all)
+    skData.append([key+"( Tuning KLOC        )"] + n.cache.all)
     
   scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR)
   for key,n in scores.items():
