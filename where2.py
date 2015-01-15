@@ -26,6 +26,23 @@ twp distant points. Divide that data at the median of those projects.
 
 """
 def fastmap(m,data, what=lambda m: m.decisions):
+  
+  def centroid(lst):
+    centroid = sum(lst)/len(lst)
+    for i in range(len(lst)):
+      if lst[i] > centroid:
+        return centroid, i
+    return centroid, len(lst)
+  
+  def sdiv(lst):
+    bestVar = sys.maxint
+    bestCut = len(lst)
+    for i in range(1,len(lst)):
+      variance = var(lst[:i]) + var(lst[i:])
+      if variance < bestVar:
+        bestVar, bestCut = variance, i
+    return bestVar, bestCut
+  
   "Divide data into two using distance to two distant items."
   one  = any(data)             # 1) pick anything
   west = furthest(m,one,data, what = what)  # 2) west is as far as you can go from anything
@@ -40,7 +57,12 @@ def fastmap(m,data, what=lambda m: m.decisions):
     y = max(0, a**2 - x**2)**0.5 # not used, here for a demo
     lst  += [(x,one)]
   lst   = sorted(lst)
-  mid   = len(lst)//2
+  if m._split == "variance":
+    variance, mid = sdiv(map(first, lst))
+  elif m._split == "centroid":
+    centroid, mid = centroid(map(first,lst))
+  else: #median
+    mid   = len(lst)//2
   wests = map(second,lst[:mid])
   easts = map(second,lst[mid:])
   # Projection of midpoint, used for future testing
@@ -262,10 +284,10 @@ def where2(m, data, lvl=0, up=None, verbose=True):
   node.variance = variance(data)
   if ((not hasattr(m, "max_variance")) or m.max_variance < node.variance):
     m.max_variance = node.variance
+  node.val = data
   if tooDeep() or tooFew():
     if verbose:
-      show(".")	
-    node.val = data
+      show(".")
   else:
     if verbose:
       show("")

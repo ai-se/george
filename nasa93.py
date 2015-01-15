@@ -14,7 +14,8 @@ Data:
 
 """
 def nasa93(doTune = False, weighKLOC=False, 
-           klocWt=None, sdivWeigh = None):
+           klocWt=None, sdivWeigh = None, 
+           split = "median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8
@@ -130,7 +131,8 @@ def nasa93(doTune = False, weighKLOC=False,
     _doTune = doTune,
     _weighKLOC = weighKLOC,
     _klocWt = klocWt,
-    _sdivWeigh = sdivWeigh
+    _sdivWeigh = sdivWeigh,
+    _split = split
     )
 """
 

@@ -255,7 +255,7 @@ Code:
 """
 def data(indep=[], less=[], more=[], _rows=[],
          _tunings=[], _doTune=False, _weighKLOC=False
-        ,_klocWt = None, _sdivWeigh=None):
+        ,_klocWt = None, _sdivWeigh=None, _split="median"):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -271,7 +271,8 @@ def data(indep=[], less=[], more=[], _rows=[],
       _doTune = _doTune,
       _weighKLOC = _weighKLOC,
       _klocWt = _klocWt,
-      _sdivWeigh = _sdivWeigh)
+      _sdivWeigh = _sdivWeigh,
+      _split = _split)
   if (_doTune and len(_tunings) != 0):
     tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]

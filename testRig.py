@@ -81,13 +81,19 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
     east = furthest(duplicatedModel,west,data, what = what)
     c    = dist(duplicatedModel,west,east, what = what)
     test_leaf.west, test_leaf.east, test_leaf.c = west, east, c
+    
     for one in data:
+      if c == 0:
+        one.cosine = 0
+        continue
       a = dist(duplicatedModel,one,west, what = what)
       b = dist(duplicatedModel,one,east, what = what)
       x = (a*a + c*c - b*b)/(2*c) # cosine rule
       one.cosine = x
       
   def getCosine(test_leaf, what = lambda duplicatedModel: duplicatedModel.decisions):
+    if (test_leaf.c == 0):
+      return 0
     a = dist(duplicatedModel,test,test_leaf.west, what = what)
     b = dist(duplicatedModel,test,test_leaf.east, what = what)
     return (a*a + test_leaf.c**2 - b*b)/(2*test_leaf.c) # cosine rule
@@ -123,10 +129,14 @@ def CART(score, cartIP, test, desired_effort):
   #print(test_effort, desired_effort)
   score += abs(desired_effort - test_effort)/desired_effort
   
-def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrByDcsn = None):
+def testRig(dataset=nasa93(doTune=DO_TUNE), 
+            duplicator=interpolateNTimes, 
+            clstrByDcsn = None, doCART = False):
   rseed(1)
-  scores=dict(clstr=N(),CARTT=N(), lRgCl=N())
-  #scores=dict(clstr=N(), lRgCl=N())
+  if doCART:
+    scores=dict(clstr=N(),CARTT=N(), lRgCl=N())
+  else:
+    scores=dict(clstr=N(), lRgCl=N())
   #scores=dict(clstr=N())
   for score in scores.values():
     score.go=True
@@ -148,8 +158,8 @@ def testRig(dataset=nasa93(doTune=DO_TUNE), duplicator=interpolateNTimes, clstrB
     #n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
     n = scores["lRgCl"]
     n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
-    n = scores["CARTT"]
-    n.go and CART(n, cartIP, test, desired_effort)
+    if doCART:
+      CART(scores["CARTT"], cartIP, test, desired_effort)
   return scores
   
 """
@@ -171,39 +181,45 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
   return scores
 
 def testDriver():
-  skData = [];
-
+  skData = []
+  doCART = True
   scores = testCoCoMo(dataset=MODEL())
   for key, n in scores.items():
-    skData.append([key+".                  ."] + n.cache.all)
-  
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( no tuning          )"] + n.cache.all)
-  
-  scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( Tuning KLOC        )"] + n.cache.all)
+    skData.append([key+".                      ."] + n.cache.all)
+  for splitter in ["median", "variance", "centroid"]:
+    global CLUSTERER
+    CLUSTERER = launchWhere2
+    global GET_CLUSTER
+    GET_CLUSTER = leaf
+
+    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, split=splitter),duplicator=DUPLICATOR, doCART = doCART)
+    doCART = False
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( no tuning          )"] + n.cache.all)
+
+    scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False, split=splitter),duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( Tuning KLOC        )"] + n.cache.all)
     
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( Weighing Norm KLOC )"] + n.cache.all)
+    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True, split=splitter),duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( Weighing Norm KLOC )"] + n.cache.all)
     
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( sdiv_weight **  1  )"] + n.cache.all)
-    
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 2),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( sdiv_weight **  2  )"] + n.cache.all)
-  
-  global CLUSTERER
-  CLUSTERER = TEAK.teak
-  global GET_CLUSTER
-  GET_CLUSTER = TEAK.leafTeak
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1),duplicator=DUPLICATOR)
-  for key,n in scores.items():
-    skData.append([key+"( TEAK               )"] + n.cache.all)
+    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( sdiv_weight **  1  )"] + n.cache.all)
+
+    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( sdiv_weight **  2  )"] + n.cache.all)
+
+    global CLUSTERER
+    CLUSTERER = TEAK.teak
+    global GET_CLUSTER
+    GET_CLUSTER = TEAK.leafTeak
+    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, split=splitter),duplicator=DUPLICATOR)
+    for key,n in scores.items():
+      skData.append([splitter[:3]+"-"+key+"( TEAK               )"] + n.cache.all)
   
   '''
   global CLUSTERER
@@ -250,4 +266,4 @@ def testKLOCTuneDriver():
   
 #testKLOCTuneDriver()
 
-#testRig(dataset=MODEL(doTune=False, weighKLOC=False), duplicator=interpolateNTimes, clstrByDcsn = None)
+#testRig(dataset=MODEL(doTune=False, weighKLOC=False), duplicator=interpolateNTimes)
