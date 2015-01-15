@@ -38,7 +38,8 @@ def fastmap(m,data, what=lambda m: m.decisions):
     bestVar = sys.maxint
     bestCut = len(lst)
     for i in range(1,len(lst)):
-      variance = var(lst[:i]) + var(lst[i:])
+      lst_1, lst_2 = lst[:i],lst[i:]
+      variance = (len(lst_1)*var(lst_1) + len(lst_2)*var(lst_2))/(len(lst_1)+len(lst_2))
       if variance < bestVar:
         bestVar, bestCut = variance, i
     return bestVar, bestCut

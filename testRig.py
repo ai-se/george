@@ -197,6 +197,8 @@ def testDriver():
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( no tuning          )"] + n.cache.all)
 
+    '''
+    HACKS
     scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( Tuning KLOC        )"] + n.cache.all)
@@ -204,7 +206,7 @@ def testDriver():
     scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( Weighing Norm KLOC )"] + n.cache.all)
-    
+    '''
     scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( sdiv_weight **  1  )"] + n.cache.all)
