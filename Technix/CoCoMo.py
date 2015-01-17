@@ -80,6 +80,6 @@ def assess(dataset, training, aGuess, bGuess):
   error = 0.0
   for project in training: # find error on training
     predicted = cocomo2(dataset, project.cells, aGuess, bGuess)
-    actual = effort(project)
+    actual = effort(dataset, project)
     error += abs(predicted - actual) / actual
   return error / len(training) # mean training error

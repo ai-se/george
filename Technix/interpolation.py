@@ -5,10 +5,10 @@ Source file to perform interpolation on the nasa93 data
 import sys
 import random
 from lib import *
-from nasa93 import *
+from Models.nasa93 import *
 from settings import *
 from where2 import *
-from utils import *
+from Utilities.utils import *
 import numpy as np
 import TEAK
 

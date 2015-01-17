@@ -5,14 +5,14 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LinearRegression
 from lib import *
 from where2 import *
-from interpolation import *
-from extrapolation import *
-from coc81 import *
-from JPL import *
-from coc2010 import *
-import sk
-import TEAK
-import CoCoMo
+from Technix.interpolation import *
+from Technix.extrapolation import *
+from Models.coc81 import *
+from Models.JPL import *
+from Models.coc2010 import *
+import Technix.sk as sk
+import Technix.TEAK as TEAK
+import Technix.CoCoMo as CoCoMo
 
 DUPLICATION_SIZE = 0
 CLUSTERER = launchWhere2
@@ -20,7 +20,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = coc2010
+MODEL = JPL
 
 """
 Creates a generator of 1 test record 
@@ -55,7 +55,7 @@ Selecting the closest cluster and the closest row
 def clusterk1(score, duplicatedModel, tree, test, desired_effort):
   test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
   nearest_row = closest(duplicatedModel, test, test_leaf.val)
-  test_effort = effort(nearest_row)
+  test_effort = effort(duplicatedModel, nearest_row)
   error = abs(desired_effort - test_effort)/desired_effort
   #print("clusterk1", test_effort, desired_effort, error)
   score += error
@@ -71,7 +71,7 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
     for row in rows:
       #trainIPs.append(row.cells[:len(duplicatedModel.indep)])
       trainIPs.append([row.cosine])
-      trainOPs.append(effort(row))
+      trainOPs.append(effort(duplicatedModel, row))
     return trainIPs, trainOPs
   
   def fastMapper(test_leaf, what = lambda duplicatedModel: duplicatedModel.decisions):
@@ -113,7 +113,7 @@ expected effort
 """
 def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
   nearestN = closestN(duplicatedModel, k, test, duplicatedModel._rows)
-  expectedSum = sum(map(lambda x:effort(x[1]), nearestN))
+  expectedSum = sum(map(lambda x:effort(duplicatedModel, x[1]), nearestN))
   test_effort = expectedSum / k
   score += abs(desired_effort - test_effort)/desired_effort  
 
@@ -142,7 +142,7 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
     score.go=True
   for test, train in loo(dataset._rows):
     say(".")
-    desired_effort = effort(test)
+    desired_effort = effort(dataset, test)
     duplicatedModel = duplicator(dataset, train, CLUSTERER, DUPLICATION_SIZE, clstrByDcsn)
     if (clstrByDcsn == None):
       tree = CLUSTERER(duplicatedModel, rows=None, verbose=False)
@@ -173,7 +173,7 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
     score.go=True
   for row in dataset._rows:
     say('.')
-    desired_effort = effort(row)
+    desired_effort = effort(dataset, row)
     test_effort = CoCoMo.cocomo2(dataset, row.cells, a, b)
     test_effort_tuned = CoCoMo.cocomo2(dataset, row.cells, tuned_a, tuned_b)
     scores["COCOMO2"] += abs(desired_effort - test_effort)/desired_effort

@@ -63,8 +63,9 @@ def pairs(lst):
     yield last,i
     last = i
 
-def xtile(lst,lo=0,hi=100,width=50,
+def xtile(lst,lo=0,hi=100,width=40,
              chops=[0.1 ,0.3,0.5,0.7,0.9],
+             #chops=[0.25,0.5,0.75],
              marks=["-" ," "," ","-"," "],
              bar="|",star="*",show=" %3.0f"):
   """The function _xtile_ takes a list of (possibly)

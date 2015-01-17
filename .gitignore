@@ -1,4 +1,4 @@
 *.pyc
 References/icse14-v5.py
-JPL.py
-coc2010.py
+Models/JPL.py
+Models/coc2010.py

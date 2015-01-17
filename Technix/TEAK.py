@@ -3,7 +3,7 @@ import  sys
 sys.dont_write_bytecode = True
 from lib import *
 from where2 import *
-from nasa93 import *
+from Models.nasa93 import *
 
 # TODO implement TEAK
 def teak(d=nasa93(), rows=None, verbose = False):

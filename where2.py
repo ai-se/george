@@ -13,7 +13,7 @@ from __future__ import division,print_function
 import  sys  
 sys.dont_write_bytecode = True
 from lib import *
-from nasa93 import *
+from Models.nasa93 import *
 from numpy import var
 
 CLSTR_BY_DEC = True;
@@ -282,7 +282,7 @@ def where2(m, data, lvl=0, up=None, verbose=True):
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
   node.median_row = data[len(data)//2]
-  node.variance = variance(data)
+  node.variance = variance(m, data)
   if ((not hasattr(m, "max_variance")) or m.max_variance < node.variance):
     m.max_variance = node.variance
   node.val = data
@@ -517,10 +517,10 @@ Compute variance of all rows
 
 """
 
-def variance(rows):
+def variance(m, rows):
   efforts = []
   for row in rows:
-    efforts.append(effort(row))
+    efforts.append(effort(m, row))
   return var(efforts)
     
 """
