@@ -7,12 +7,19 @@ from lib import *
 from where2 import *
 from Technix.interpolation import *
 from Technix.extrapolation import *
-from Models.coc81 import *
-from Models.JPL import *
-from Models.coc2010 import *
 import Technix.sk as sk
 import Technix.TEAK as TEAK
 import Technix.CoCoMo as CoCoMo
+from Models.coc81 import *
+from Models.JPL import *
+from Models.coc2010 import *
+from Models.albrecht import *
+from Models.china import *
+from Models.cocomo import *
+from Models.kemerer import *
+from Models.maxwell import *
+from Models.miyazaki import *
+from Models.telecom import *
 
 DUPLICATION_SIZE = 0
 CLUSTERER = launchWhere2
@@ -20,7 +27,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = JPL
+MODEL = miyazaki
 
 """
 Creates a generator of 1 test record 
@@ -39,9 +46,9 @@ def say(*lst):
   print(*lst,end="")
   sys.stdout.flush()
 
-def formatForCART(test,trains,
-        indep=lambda x: x.cells[:-3]
-        ,dep=lambda x: x.cells[-3]):
+def formatForCART(dataset,test,trains):
+  indep = lambda x: x.cells[:len(dataset.indep)]
+  dep   = lambda x: x.cells[len(dataset.indep)]
   trainInputSet = []
   trainOutputSet = []
   for train in trains:
@@ -120,9 +127,8 @@ def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
 """
 Classification and Regression Trees from sk-learn
 """
-def CART(score, cartIP, test, desired_effort):
-  trainIp, trainOp, testIp, testOp = formatForCART(test,cartIP);
-  #print(len(trainIp))
+def CART(dataset, score, cartIP, test, desired_effort):
+  trainIp, trainOp, testIp, testOp = formatForCART(dataset, test,cartIP);
   decTree = DecisionTreeClassifier(criterion="entropy", random_state=1)
   decTree.fit(trainIp,trainOp)
   test_effort = decTree.predict(testIp)[0]
@@ -135,6 +141,7 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
   rseed(1)
   if doCART:
     scores=dict(clstr=N(),CARTT=N(), lRgCl=N())
+    #scores=dict(clstr=N(), lRgCl=N())
   else:
     scores=dict(clstr=N(), lRgCl=N())
   #scores=dict(clstr=N())
@@ -159,7 +166,7 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
     n = scores["lRgCl"]
     n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
     if doCART:
-      CART(scores["CARTT"], cartIP, test, desired_effort)
+      CART(dataset, scores["CARTT"], cartIP, test, desired_effort)
   return scores
   
 """
@@ -183,19 +190,25 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
 def testDriver():
   skData = []
   doCART = True
-  scores = testCoCoMo(dataset=MODEL())
-  for key, n in scores.items():
-    skData.append([key+".                      ."] + n.cache.all)
+  dataset=MODEL()
+  if  dataset._isCocomo:
+    scores = testCoCoMo(dataset)
+    for key, n in scores.items():
+      skData.append([key+".           ."] + n.cache.all)
   for splitter in ["median", "variance", "centroid"]:
+    '''
     global CLUSTERER
     CLUSTERER = launchWhere2
     global GET_CLUSTER
     GET_CLUSTER = leaf
-
-    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, split=splitter),duplicator=DUPLICATOR, doCART = doCART)
+    '''
+    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR, doCART = doCART)
     doCART = False
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( no tuning          )"] + n.cache.all)
+      if key == 'CARTT':
+        skData.append([key+"               "] + n.cache.all)
+      else:
+        skData.append([splitter[:3]+"-"+key+"(no tuning)"] + n.cache.all)
 
     '''
     HACKS
@@ -207,22 +220,25 @@ def testDriver():
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( Weighing Norm KLOC )"] + n.cache.all)
     '''
-    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
+    scores = testRig(dataset=MODEL(sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( sdiv_weight **  1  )"] + n.cache.all)
+      skData.append([splitter[:3]+"-"+key+"(sdiv_wt^1)"] + n.cache.all)
 
-    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
+    scores = testRig(dataset=MODEL(sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( sdiv_weight **  2  )"] + n.cache.all)
-
+      skData.append([splitter[:3]+"-"+key+"(sdiv_wt^2)"] + n.cache.all)
+    
+    """
+    ###TEAK
+    
     global CLUSTERER
     CLUSTERER = TEAK.teak
     global GET_CLUSTER
     GET_CLUSTER = TEAK.leafTeak
-    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False, split=splitter),duplicator=DUPLICATOR)
+    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( TEAK               )"] + n.cache.all)
-  
+      skData.append([splitter[:3]+"-"+key+"(TEAK     )"] + n.cache.all)
+    """
   '''
   global CLUSTERER
   CLUSTERER = launchWhereV3
@@ -235,6 +251,7 @@ def testDriver():
     skData.append([key+"( 2nd level obj )     "] + n.cache.all)
   '''
   print("")
+  print(str(len(dataset._rows)) + " data points")
   sk.rdivDemo(skData)
   
 testDriver()

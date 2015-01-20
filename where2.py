@@ -153,7 +153,7 @@ def dist(m,i,j,
     n1 = norm(m, c, i.cells[c])
     n2 = norm(m, c, j.cells[c])
     #print(getTuningFactors(m, i.cells))
-    if (m._weighKLOC and c == 22) :
+    if (m._weighKLOC and c == len(m.indep)) :
       if hasattr(m, 'tuneRatio') and m.tuneRatio:
         inc = ((n1-n2)*m.tuneRatio)**2
       else:

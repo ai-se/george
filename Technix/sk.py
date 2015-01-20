@@ -81,8 +81,9 @@ def xtile(lst,lo=0,hi=100,width=40,
   def pretty(lst) : 
     return ', '.join([show % x for x in lst])
   ordered = sorted(lst)
-  lo      = min(lo,ordered[0])
-  hi      = max(hi,ordered[-1])
+  #lo      = min(lo,ordered[0])
+  #hi      = max(hi,ordered[-1])
+  lo, hi  = ordered[0], ordered[-1]
   what    = [pos(p)   for p in chops]
   where   = [place(n) for n in  what]
   out     = [" "] * width
@@ -91,7 +92,34 @@ def xtile(lst,lo=0,hi=100,width=40,
       out[i] = marks[0]
     marks = marks[1:]
   out[int(width/2)]    = bar
-  out[place(pos(0.5))] = star 
+  out[place(pos(0.5))] = star
+  return '('+''.join(out) +  ")," +  pretty(what)
+
+def xtileLocalized(lst, median,width=40,
+             chops=[0.1 ,0.3,0.5,0.7,0.9],
+             #chops=[0.25,0.5,0.75],
+             marks=["-" ," "," ","-"," "],
+             bar="|",star="*",show=" %3.0f"):
+  def kill_outliers(lst):
+    return [x for x in lst if x <= 4*median]
+  def pos(p)   : return ordered[int(len(ordered)*p)]
+  def place(x) : 
+    return int(width*float((x - lo))/(hi - lo+0.00001))
+  def pretty(lst) : 
+    return ', '.join([show % x for x in lst])
+  ordered = kill_outliers(sorted(lst))
+  #lo      = min(lo,ordered[0])
+  #hi      = max(hi,ordered[-1])
+  lo, hi  = ordered[0], ordered[-1]
+  what    = [pos(p)   for p in chops]
+  where   = [place(n) for n in  what]
+  out     = [" "] * width
+  for one,two in pairs(where):
+    for i in range(one,two): 
+      out[i] = marks[0]
+    marks = marks[1:]
+  out[int(width/2)]    = bar
+  out[place(pos(0.5))] = star
   return '('+''.join(out) +  ")," +  pretty(what)
 
 def _tileX() :
@@ -488,9 +516,11 @@ def rdivDemo(data):
                ('rank', 'name', 'med', 'iqr'))+ "\n"+ line
   for _,__,x in sorted(ranks):
     q1,q2,q3 = x.quartiles()
+    #xtile(x.all,lo=lo,hi=hi,width=30,show="%5.2f")
     print  ('%1s , %12s , %4s , %4s ' % \
                  (x.rank+1, x.name, q2, q3 - q1))  + \
-              xtile(x.all,lo=lo,hi=hi,width=30,show="%5.2f")
+              xtileLocalized(x.all,x.median(),width=30,show="%5.2f")
+              #xtile(x.all,lo=lo,hi=hi,width=100,show="%5.2f")
     last = x.rank 
 """
 
