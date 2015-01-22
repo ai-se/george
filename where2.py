@@ -36,8 +36,8 @@ def fastmap(m,data, what=lambda m: m.decisions):
   
   def sdiv(lst):
     bestVar = sys.maxint
-    bestCut = len(lst)
-    for i in range(1,len(lst)):
+    bestCut = len(lst)-1
+    for i in range(1,len(lst)-1):
       lst_1, lst_2 = lst[:i],lst[i:]
       variance = (len(lst_1)*var(lst_1) + len(lst_2)*var(lst_2))/(len(lst_1)+len(lst_2))
       if variance < bestVar:
@@ -54,7 +54,10 @@ def fastmap(m,data, what=lambda m: m.decisions):
   for one in data:
     a = dist(m,one,west, what = what)
     b = dist(m,one,east, what = what)
-    x = (a*a + c*c - b*b)/(2*c) # cosine rule
+    if (c == 0):
+      x = 0
+    else :
+      x = (a*a + c*c - b*b)/(2*c) # cosine rule
     y = max(0, a**2 - x**2)**0.5 # not used, here for a demo
     lst  += [(x,one)]
   lst   = sorted(lst)
@@ -86,6 +89,8 @@ def leaf(m,one,node):
     a = dist(m,one,west)
     b = dist(m,one,east)
     c = dist(m,west,east)
+    if c == 0:
+      return node
     x = (a*a + c*c - b*b)/(2*c)
     if (x<mid_cos):
       return leaf(m,one,node._kids[0])

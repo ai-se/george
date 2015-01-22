@@ -35,7 +35,7 @@ def china(doTune = False, weighKLOC=False,
            split = "median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
-     # 0..6
+     # 0..15
      'AFP','Input','Output','Enquiry','File','Interface','Added','Changed','Deleted',
      'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP', 'Resource', 'Dev.Type', 'Duration'],
     less = ['Effort', 'N_effort'],

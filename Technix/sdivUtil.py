@@ -68,7 +68,7 @@ def fss(d, factor=1):
   for i in range(len(d.indep)):
     xs = sdiv(cells(d), 
               num1 = lambda x:x[i],
-              num2 = lambda x:x[-3])
+              num2 = lambda x:x[len(d.indep)])
     xpect = sum(map(lambda x: x[0],xs))
     if xpect < minVal:
       minVal = xpect

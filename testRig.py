@@ -20,6 +20,10 @@ from Models.kemerer import *
 from Models.maxwell import *
 from Models.miyazaki import *
 from Models.telecom import *
+from Models.usp05 import *
+from Models.kitchenham import *
+from Models.isbsg10 import *
+from Models.cosmic import *
 
 DUPLICATION_SIZE = 0
 CLUSTERER = launchWhere2
@@ -27,7 +31,7 @@ GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = miyazaki
+MODEL = china
 
 """
 Creates a generator of 1 test record 
@@ -114,14 +118,32 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
   error = abs(desired_effort - test_effort)/desired_effort
   score += error
   
+  
+"""
+Performing LinearRegression over entire dataset
+"""
+def linearRegression(score, model, train, test, desired_effort):
+  def getTrainData(rows):
+    trainIPs, trainOPs = [], []
+    for row in rows:
+      trainIPs.append(row.cells[:len(model.indep)])
+      trainOPs.append(effort(model, row))
+    return trainIPs, trainOPs
+  
+  trainIPs, trainOPs = getTrainData(train)
+  clf = LinearRegression()
+  clf.fit(trainIPs, trainOPs)
+  test_effort = clf.predict(test.cells[:len(model.indep)])
+  error = abs(desired_effort - test_effort)/desired_effort
+  score += error
+
 """
 Selecting K-nearest neighbors and finding the mean
 expected effort
 """
 def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
   nearestN = closestN(duplicatedModel, k, test, duplicatedModel._rows)
-  expectedSum = sum(map(lambda x:effort(duplicatedModel, x[1]), nearestN))
-  test_effort = expectedSum / k
+  test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   score += abs(desired_effort - test_effort)/desired_effort  
 
 """
@@ -140,11 +162,11 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
             clstrByDcsn = None, doCART = False):
   rseed(1)
   if doCART:
-    scores=dict(clstr=N(),CARTT=N(), lRgCl=N())
-    #scores=dict(clstr=N(), lRgCl=N())
+    scores=dict(clstr=N(),CARTT=N(), lRgCl=N(),
+               knn_1=N(), knn_3=N(), knn_5=N(),
+               linRg=N())
   else:
     scores=dict(clstr=N(), lRgCl=N())
-  #scores=dict(clstr=N())
   for score in scores.values():
     score.go=True
   for test, train in loo(dataset._rows):
@@ -167,6 +189,14 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
     n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
     if doCART:
       CART(dataset, scores["CARTT"], cartIP, test, desired_effort)
+      n = scores["knn_1"]
+      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=1)
+      n = scores["knn_3"]
+      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
+      n = scores["knn_5"]
+      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=5)
+      n = scores["linRg"]
+      n.go and linearRegression(n, duplicatedModel, train, test, desired_effort)
   return scores
   
 """
@@ -186,7 +216,8 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
     scores["COCOMO2"] += abs(desired_effort - test_effort)/desired_effort
     scores["COCONUT"] += abs(desired_effort - test_effort_tuned)/desired_effort
   return scores
-
+        
+    
 def testDriver():
   skData = []
   doCART = True
@@ -194,8 +225,9 @@ def testDriver():
   if  dataset._isCocomo:
     scores = testCoCoMo(dataset)
     for key, n in scores.items():
-      skData.append([key+".           ."] + n.cache.all)
-  for splitter in ["median", "variance", "centroid"]:
+      skData.append([key+".       ."] + n.cache.all)
+  splitters = ["median", "variance", "centroid"][1:2]
+  for splitter in splitters:
     '''
     global CLUSTERER
     CLUSTERER = launchWhere2
@@ -205,10 +237,10 @@ def testDriver():
     scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR, doCART = doCART)
     doCART = False
     for key,n in scores.items():
-      if key == 'CARTT':
-        skData.append([key+"               "] + n.cache.all)
+      if (key == "clstr" or key == "lRgCl"):
+        skData.append([key+"(no tuning)"] + n.cache.all)
       else:
-        skData.append([splitter[:3]+"-"+key+"(no tuning)"] + n.cache.all)
+        skData.append([key+".         ."] + n.cache.all)
 
     '''
     HACKS
@@ -222,12 +254,11 @@ def testDriver():
     '''
     scores = testRig(dataset=MODEL(sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"(sdiv_wt^1)"] + n.cache.all)
+      skData.append([key+"(sdiv_wt^1)"] + n.cache.all)
 
     scores = testRig(dataset=MODEL(sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"(sdiv_wt^2)"] + n.cache.all)
-    
+      skData.append([key+"(sdiv_wt^2)"] + n.cache.all)
     """
     ###TEAK
     
@@ -251,7 +282,8 @@ def testDriver():
     skData.append([key+"( 2nd level obj )     "] + n.cache.all)
   '''
   print("")
-  print(str(len(dataset._rows)) + " data points")
+  print(str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
+  print("")
   sk.rdivDemo(skData)
   
 testDriver()
