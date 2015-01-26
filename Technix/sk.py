@@ -82,18 +82,15 @@ def xtile(lst,lo=0,hi=100,width=40,
   def pretty(lst) : 
     return ', '.join([show % x for x in lst])
   ordered = sorted(lst)
-  #print(ordered)
-  #ordered = [x for x in ordered if x < 2]
-  #print(ordered)
-  lo      = min(lo,ordered[0])
-  hi      = max(hi,ordered[-1])
-  #lo, hi  = ordered[0], ordered[-1]
+  #lo      = min(lo,ordered[0])
+  #hi      = max(hi,ordered[-1])
   what    = [pos(p)   for p in chops]
   where   = [place(n) for n in  what]
   out     = [" "] * width
   for one,two in pairs(where):
-    for i in range(one,two): 
-      out[i] = marks[0]
+    for i in range(one,two):
+      if i<len(out):
+        out[i] = marks[0]
     marks = marks[1:]
   out[int(width/2)]    = bar
   out[place(pos(0.5))] = star
@@ -506,14 +503,19 @@ Driver for the demos:
 def rdivDemo(data):
   def z(x):
     return int(100 * (x - lo) / (hi - lo + 0.00001))
+  def kill_outliers(lst, median):
+    return [x for x in lst if x < 4*median]
   data = map(lambda lst:Num(lst[0],lst[1:]),
              data)
   ranks=[]
+  maxMedian = -1
   for x in scottknott(data,useA12=True):
+    maxMedian = max(maxMedian, x.median())
     ranks += [(x.rank,x.median(),x)]
   all=[]
   for _,__,x in sorted(ranks): all += x.all
-  all = sorted(all)
+  #all = sorted(all)
+  all = kill_outliers(sorted(all),maxMedian)
   lo, hi = all[0], all[-1]
   line = "----------------------------------------------------"
   last = None
@@ -525,7 +527,6 @@ def rdivDemo(data):
     print  ('%1s , %12s , %4s , %4s ' % \
                  (x.rank+1, x.name, q2, q3 - q1))  + \
               xtile(x.all,lo=lo,hi=hi,width=30,show="%5.2f")
-              #xtileLocalized(x.all,x.median(),width=30,show="%5.2f")
     last = x.rank 
 """
 

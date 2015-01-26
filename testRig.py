@@ -10,28 +10,16 @@ from Technix.extrapolation import *
 import Technix.sk as sk
 import Technix.TEAK as TEAK
 import Technix.CoCoMo as CoCoMo
-from Models.coc81 import *
-from Models.JPL import *
-from Models.coc2010 import *
-from Models.albrecht import *
-from Models.china import *
-from Models.cocomo import *
-from Models.kemerer import *
-from Models.maxwell import *
-from Models.miyazaki import *
-from Models.telecom import *
-from Models.usp05 import *
-from Models.kitchenham import *
-from Models.isbsg10 import *
-from Models.cosmic import *
 
+from Models import *
 DUPLICATION_SIZE = 0
+nasa93 = nasa93.nasa93
 CLUSTERER = launchWhere2
 GET_CLUSTER = leaf
 #DUPLICATOR = extrapolateNTimes
 DUPLICATOR = interpolateNTimes
 DO_TUNE = False
-MODEL = china
+MODEL = coc81.coc81
 
 """
 Creates a generator of 1 test record 
@@ -143,6 +131,7 @@ expected effort
 """
 def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
   nearestN = closestN(duplicatedModel, k, test, duplicatedModel._rows)
+  #test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   score += abs(desired_effort - test_effort)/desired_effort  
 
@@ -159,14 +148,16 @@ def CART(dataset, score, cartIP, test, desired_effort):
   
 def testRig(dataset=nasa93(doTune=DO_TUNE), 
             duplicator=interpolateNTimes, 
-            clstrByDcsn = None, doCART = False):
+            clstrByDcsn = None, doCART = False,
+            doKNN = False, doLinRg = False):
   rseed(1)
+  scores=dict(clstr=N(), lRgCl=N())
   if doCART:
-    scores=dict(clstr=N(),CARTT=N(), lRgCl=N(),
-               knn_1=N(), knn_3=N(), knn_5=N(),
-               linRg=N())
-  else:
-    scores=dict(clstr=N(), lRgCl=N())
+    scores['CARTT']=N();
+  if  doKNN:
+    scores['knn_1'],scores['knn_3'],scores['knn_5'] = N(), N(), N()
+  if doLinRg:
+    scores['linRg'] = N()
   for score in scores.values():
     score.go=True
   for test, train in loo(dataset._rows):
@@ -189,12 +180,14 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
     n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
     if doCART:
       CART(dataset, scores["CARTT"], cartIP, test, desired_effort)
+    if doKNN:
       n = scores["knn_1"]
       n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=1)
       n = scores["knn_3"]
       n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
       n = scores["knn_5"]
       n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=5)
+    if doLinRg:
       n = scores["linRg"]
       n.go and linearRegression(n, duplicatedModel, train, test, desired_effort)
   return scores
@@ -221,6 +214,7 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
 def testDriver():
   skData = []
   doCART = True
+  doKNN = False
   dataset=MODEL()
   if  dataset._isCocomo:
     scores = testCoCoMo(dataset)
@@ -234,7 +228,7 @@ def testDriver():
     global GET_CLUSTER
     GET_CLUSTER = leaf
     '''
-    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR, doCART = doCART)
+    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR, doCART = doCART, doKNN=True, doLinRg=True)
     doCART = False
     for key,n in scores.items():
       if (key == "clstr" or key == "lRgCl"):
@@ -252,14 +246,16 @@ def testDriver():
     for key,n in scores.items():
       skData.append([splitter[:3]+"-"+key+"( Weighing Norm KLOC )"] + n.cache.all)
     '''
-    scores = testRig(dataset=MODEL(sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR)
+    scores = testRig(dataset=MODEL(sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR, doKNN=True)
     for key,n in scores.items():
       skData.append([key+"(sdiv_wt^1)"] + n.cache.all)
 
+    
+    """
     scores = testRig(dataset=MODEL(sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
     for key,n in scores.items():
       skData.append([key+"(sdiv_wt^2)"] + n.cache.all)
-    """
+      
     ###TEAK
     
     global CLUSTERER

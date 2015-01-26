@@ -214,7 +214,7 @@ def closestN(m,n,i,all):
     if id(i) == id(j): continue
     d = dist(m,i,j)
     tmp += [ (d,j) ]
-  return sorted(tmp)[-1*n:]
+  return sorted(tmp)[:n]
 """
 
 ## WHERE2 = Recursive Fastmap
