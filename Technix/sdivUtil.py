@@ -62,7 +62,7 @@ def cells(dataset):
     rowCells += [row.cells]
   return rowCells
 
-def fss(d, factor=1):
+def fss(d):
   rank = []
   maxVal, minVal = 0, sys.maxint
   for i in range(len(d.indep)):
@@ -75,16 +75,16 @@ def fss(d, factor=1):
     elif xpect > maxVal:
       maxVal = xpect
     rank += [(xpect,i)]
-  d.weights = normalize_weights(rank, maxVal, minVal, factor)
+  d.weights = normalize_weights(rank, maxVal, minVal)
   return d
   
-def normalize_weights(rank, maxVal, minVal, factor):
+def normalize_weights(rank, maxVal, minVal):
   # sort based on columns
   sortedRank = sorted(rank, key=lambda x: x[1])
   weights = []
   for value, dimension in sortedRank:
     # TODO Raise to power 2 and try
-    normal_Wt= ((maxVal - value) / (maxVal - minVal))**factor
+    normal_Wt= ((maxVal - value) / (maxVal - minVal))
     weights.append(normal_Wt)
   return weights;
   

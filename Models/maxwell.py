@@ -39,9 +39,8 @@ from lib import *
 @attribute	Effort	numeric
 """
 
-def maxwell(doTune = False, weighKLOC=False, 
-           klocWt=None, sdivWeigh = None, 
-           split = "median"):
+def maxwell(weighFeature = False, 
+           split = "variance"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..6
@@ -122,10 +121,7 @@ def maxwell(doTune = False, weighKLOC=False,
     'Resl',   7.07, 5.65, 4.24, 2.83, 1.41, _ ],[
     'Pmat',   7.80, 6.24, 4.68, 3.12, 1.56, _ ],[
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
-    _doTune = doTune,
-    _weighKLOC = weighKLOC,
-    _klocWt = klocWt,
-    _sdivWeigh = sdivWeigh,
+    weighFeature = weighFeature,
     _split = split,
     _isCocomo = False
     )

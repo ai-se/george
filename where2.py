@@ -100,49 +100,6 @@ def leaf(m,one,node):
 
 
 """
-+ _m_ is some model that generates candidate
-  solutions that we wish to niche.
-+ _(west,east)_ are not _the_ most distant points
-  (that would require _N*N) distance
-  calculations). But they are at least very distant
-  to each other.
-
-We select the leaf in which the test node
-belongs by comparing the projection of
-test node between the extreme nodes
-but this time we alternate between decisions
-and objectives respectively
-"""
-def leafV3(m,one,node, clstrByDcsn=CLSTR_BY_DEC):
-  if node._kids:
-    east = node.east
-    west = node.west
-    mid_cos = node.mid_cos
-    if clstrByDcsn:
-      what = lambda m: m.decisions
-      a = dist(m,one,west,what)
-      b = dist(m,one,east,what)
-      c = dist(m,west,east, what)
-      x = (a*a + c*c - b*b)/(2*c)
-      if (x<mid_cos):
-        return leafV3(m,one,node._kids[0], not clstrByDcsn)
-      else:
-        return leafV3(m,one,node._kids[1], not clstrByDcsn)  
-    else :
-      # TODO find nearest centroid
-      #what = lambda m: m.objectives
-      what = lambda m: m.decisions
-      leftKids = node._kids[0]
-      rightKids = node._kids[1]
-      a = abs(dist(m, one,leftKids.median_row, what))
-      b = abs(dist(m, one,leftKids.median_row, what))
-      if (a < b):
-        return leafV3(m,one,node._kids[0], not clstrByDcsn)
-      else:
-        return leafV3(m,one,node._kids[1], not clstrByDcsn)
-  return node
-
-"""
 This code needs some helper functions. _Dist_ uses
 the standard Euclidean measure. Note that you tune
 what it uses to define the niches (decisions or
@@ -157,17 +114,7 @@ def dist(m,i,j,
   for c in what(m):
     n1 = norm(m, c, i.cells[c])
     n2 = norm(m, c, j.cells[c])
-    #print(getTuningFactors(m, i.cells))
-    if (m._weighKLOC and c == len(m.indep)) :
-      if hasattr(m, 'tuneRatio') and m.tuneRatio:
-        inc = ((n1-n2)*m.tuneRatio)**2
-      else:
-        b, sfs = getTuningFactors(m, i.cells)
-        n1 *= b+0.01*sfs
-        b, sfs = getTuningFactors(m, j.cells)
-        n2 *= b+0.01*sfs
-        inc = (n1-n2)**2
-    elif m._sdivWeigh :
+    if (hasattr(m,'weights') and len(m.weights)!=0) :
       inc = (m.weights[c] * (n1 - n2))**2
     else :
       inc = (n1-n2)**2
@@ -288,8 +235,6 @@ def where2(m, data, lvl=0, up=None, verbose=True):
             suffix,' ; ',id(node) % 1000,sep='')
   node.median_row = data[len(data)//2]
   node.variance = variance(m, data)
-  if ((not hasattr(m, "max_variance")) or m.max_variance < node.variance):
-    m.max_variance = node.variance
   node.val = data
   if tooDeep() or tooFew():
     if verbose:
@@ -305,41 +250,6 @@ def where2(m, data, lvl=0, up=None, verbose=True):
     if goRight: 
       node._kids += [where2(m, easts,  lvl+1, node, verbose=verbose)]
   return node
-
-"""
-whereV3 returns clusters similar to where2 but
-alternatively clusters between decisions and objectives RESPECTIVELY
-"""
-def whereV3(m, data, lvl=0, up=None,clstrByDcsn=CLSTR_BY_DEC, verbose=True):
-  node = o(val=None,_up=up,_kids=[])
-  def tooDeep() :
-		return lvl > The.what.depthMax
-  def tooFew() : return len(data) < The.what.minSize
-  def show(suffix): 
-    if The.verbose: 
-      print(The.what.b4*lvl,len(data),
-            suffix,' ; ',id(node) % 1000,sep='')
-  node.median_row = data[len(data)//2]
-  if tooDeep() or tooFew():
-    if verbose:
-      show(".")	
-    node.val = data
-  else:
-    if verbose:
-      show("")
-    if clstrByDcsn:
-      what = lambda m: m.decisions
-    else :
-      what = lambda m: m.objectives
-    wests,west, easts,east,c, mid_element = fastmap(m,data, what)
-    node.update(c=c,east=east,west=west,mid_cos=mid_element[0])
-    goLeft, goRight = maybePrune(m,lvl,west,east)
-    if goLeft: 
-      node._kids += [whereV3(m, wests, lvl+1, node, not clstrByDcsn, verbose=verbose)]
-    if goRight: 
-      node._kids += [whereV3(m, easts,  lvl+1, node, not clstrByDcsn, verbose=verbose)]
-  return node
-
 
 """
 
@@ -439,21 +349,6 @@ def launchWhere2(m, rows=None, verbose=True):
                prune   = False,
                wriggle = 0.3*told.sd())
   return where2(m, rows,verbose = verbose)
-
-def launchWhereV3(m, rows=None, verbose=True, clstrByDcsn=CLSTR_BY_DEC):
-  seed(1)
-  told=N()
-  if (not rows):
-    rows = m._rows
-  for r in rows:
-    s =  scores(m,r)
-    told += s
-  global The
-  The=defaults().update(verbose = True,
-               minSize = len(rows)**0.5,
-               prune   = False,
-               wriggle = 0.3*told.sd())
-  return whereV3(m, rows,verbose = verbose, clstrByDcsn=clstrByDcsn)
 
 """
 

@@ -254,9 +254,8 @@ Code:
 
 """
 def data(indep=[], less=[], more=[], _rows=[],
-         _tunings=[], _doTune=False, _weighKLOC=False
-        ,_klocWt = None, _sdivWeigh=None, _split="median"
-        , _isCocomo = True):
+         _tunings=[],weighFeature=True,
+         _split="variance",_isCocomo = True):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -269,14 +268,8 @@ def data(indep=[], less=[], more=[], _rows=[],
        more = more,
        names = indep+less+more,
       _tunings = _tunings,
-      _doTune = _doTune,
-      _weighKLOC = _weighKLOC,
-      _klocWt = _klocWt,
-      _sdivWeigh = _sdivWeigh,
       _split = _split,
       _isCocomo = _isCocomo)
-  if (_doTune and len(_tunings) != 0):
-    tuneLOC(m)
   m.decisions  = [x for x in range(nindep)]
   m.objectives = [nindep+ x for x in range(ndep)]
   m.cols       = m.decisions + m.objectives
@@ -291,8 +284,8 @@ def data(indep=[], less=[], more=[], _rows=[],
     all = sorted(row.cells[x] for row in m._rows)
     m.lo[x] = all[0]
     m.hi[x] = all[-1]
-  if _sdivWeigh :
-    sdivUtil.fss(m, factor=_sdivWeigh)
+  if weighFeature :
+    sdivUtil.fss(m)
   return m
 
 """

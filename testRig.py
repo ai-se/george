@@ -5,26 +5,16 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LinearRegression
 from lib import *
 from where2 import *
-from Technix.interpolation import *
-from Technix.extrapolation import *
 import Technix.sk as sk
-import Technix.TEAK as TEAK
 import Technix.CoCoMo as CoCoMo
 
 from Models import *
-DUPLICATION_SIZE = 0
-nasa93 = nasa93.nasa93
-CLUSTERER = launchWhere2
-GET_CLUSTER = leaf
-#DUPLICATOR = extrapolateNTimes
-DUPLICATOR = interpolateNTimes
-DO_TUNE = False
-MODEL = coc81.coc81
+MODEL = JPL.JPL
 
 """
 Creates a generator of 1 test record 
 and rest training records
-"""
+""" 
 def loo(dataset):
   for index,item in enumerate(dataset):
     yield item, dataset[:index]+dataset[index+1:]
@@ -52,7 +42,7 @@ def formatForCART(dataset,test,trains):
 Selecting the closest cluster and the closest row
 """ 
 def clusterk1(score, duplicatedModel, tree, test, desired_effort):
-  test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
+  test_leaf = leaf(duplicatedModel, test, tree)
   nearest_row = closest(duplicatedModel, test, test_leaf.val)
   test_effort = effort(duplicatedModel, nearest_row)
   error = abs(desired_effort - test_effort)/desired_effort
@@ -97,7 +87,7 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
     b = dist(duplicatedModel,test,test_leaf.east, what = what)
     return (a*a + test_leaf.c**2 - b*b)/(2*test_leaf.c) # cosine rule
     
-  test_leaf = GET_CLUSTER(duplicatedModel, test, tree)
+  test_leaf = leaf(duplicatedModel, test, tree)
   fastMapper(test_leaf)
   trainIPs, trainOPs = getTrainData(test_leaf.val)
   clf = LinearRegression()
@@ -131,7 +121,6 @@ expected effort
 """
 def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
   nearestN = closestN(duplicatedModel, k, test, duplicatedModel._rows)
-  #test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   score += abs(desired_effort - test_effort)/desired_effort  
 
@@ -143,14 +132,10 @@ def CART(dataset, score, cartIP, test, desired_effort):
   decTree = DecisionTreeClassifier(criterion="entropy", random_state=1)
   decTree.fit(trainIp,trainOp)
   test_effort = decTree.predict(testIp)[0]
-  #print(test_effort, desired_effort)
   score += abs(desired_effort - test_effort)/desired_effort
   
-def testRig(dataset=nasa93(doTune=DO_TUNE), 
-            duplicator=interpolateNTimes, 
-            clstrByDcsn = None, doCART = False,
-            doKNN = False, doLinRg = False):
-  rseed(1)
+def testRig(dataset=MODEL(), 
+            doCART = False,doKNN = False, doLinRg = False):
   scores=dict(clstr=N(), lRgCl=N())
   if doCART:
     scores['CARTT']=N();
@@ -163,40 +148,30 @@ def testRig(dataset=nasa93(doTune=DO_TUNE),
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(dataset, test)
-    duplicatedModel = duplicator(dataset, train, CLUSTERER, DUPLICATION_SIZE, clstrByDcsn)
-    if (clstrByDcsn == None):
-      tree = CLUSTERER(duplicatedModel, rows=None, verbose=False)
-    else :
-      tree = CLUSTERER(duplicatedModel, rows=None, verbose=False, clstrByDcsn = clstrByDcsn)
-    if DUPLICATION_SIZE == 0:
-      cartIP = train
-    else:
-      cartIP = duplicatedModel._rows
+    tree = launchWhere2(dataset, rows=None, verbose=False)
     n = scores["clstr"]
-    n.go and clusterk1(n, duplicatedModel, tree, test, desired_effort)
-    #n = scors[k"]
-    #n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
+    n.go and clusterk1(n, dataset, tree, test, desired_effort)
     n = scores["lRgCl"]
-    n.go and linRegressCluster(n, duplicatedModel, tree, test, desired_effort)
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort)
     if doCART:
-      CART(dataset, scores["CARTT"], cartIP, test, desired_effort)
+      CART(dataset, scores["CARTT"], train, test, desired_effort)
     if doKNN:
       n = scores["knn_1"]
-      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=1)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=1)
       n = scores["knn_3"]
-      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=3)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=3)
       n = scores["knn_5"]
-      n.go and kNearestNeighbor(n, duplicatedModel, test, desired_effort, k=5)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=5)
     if doLinRg:
       n = scores["linRg"]
-      n.go and linearRegression(n, duplicatedModel, train, test, desired_effort)
+      n.go and linearRegression(n, dataset, train, test, desired_effort)
   return scores
   
 """
 Test Rig to test CoCoMo for
 a particular dataset
 """
-def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
+def testCoCoMo(dataset=MODEL(), a=2.94, b=0.91):
   scores = dict(COCOMO2 = N(), COCONUT= N())
   tuned_a, tuned_b = CoCoMo.coconut(dataset, dataset._rows)
   for score in scores.values():
@@ -212,71 +187,24 @@ def testCoCoMo(dataset=nasa93(), a=2.94, b=0.91):
         
     
 def testDriver():
+  seed(0)
   skData = []
-  doCART = True
-  doKNN = False
   dataset=MODEL()
   if  dataset._isCocomo:
     scores = testCoCoMo(dataset)
     for key, n in scores.items():
       skData.append([key+".       ."] + n.cache.all)
-  splitters = ["median", "variance", "centroid"][1:2]
-  for splitter in splitters:
-    '''
-    global CLUSTERER
-    CLUSTERER = launchWhere2
-    global GET_CLUSTER
-    GET_CLUSTER = leaf
-    '''
-    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR, doCART = doCART, doKNN=True, doLinRg=True)
-    doCART = False
-    for key,n in scores.items():
-      if (key == "clstr" or key == "lRgCl"):
-        skData.append([key+"(no tuning)"] + n.cache.all)
-      else:
-        skData.append([key+".         ."] + n.cache.all)
+  scores = testRig(dataset=MODEL(),doCART = True, doKNN=True, doLinRg=True)
+  for key,n in scores.items():
+    if (key == "clstr" or key == "lRgCl"):
+      skData.append([key+"(no tuning)"] + n.cache.all)
+    else:
+      skData.append([key+".         ."] + n.cache.all)
 
-    '''
-    HACKS
-    scores = testRig(dataset=MODEL(doTune=True, weighKLOC=False, split=splitter),duplicator=DUPLICATOR)
-    for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( Tuning KLOC        )"] + n.cache.all)
-    
-    scores = testRig(dataset=MODEL(doTune=False, weighKLOC=True, split=splitter),duplicator=DUPLICATOR)
-    for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"( Weighing Norm KLOC )"] + n.cache.all)
-    '''
-    scores = testRig(dataset=MODEL(sdivWeigh = 1, split=splitter),duplicator=DUPLICATOR, doKNN=True)
-    for key,n in scores.items():
+  scores = testRig(dataset=MODEL(weighFeature = True), doKNN=True)
+  for key,n in scores.items():
       skData.append([key+"(sdiv_wt^1)"] + n.cache.all)
-
     
-    """
-    scores = testRig(dataset=MODEL(sdivWeigh = 2, split=splitter),duplicator=DUPLICATOR)
-    for key,n in scores.items():
-      skData.append([key+"(sdiv_wt^2)"] + n.cache.all)
-      
-    ###TEAK
-    
-    global CLUSTERER
-    CLUSTERER = TEAK.teak
-    global GET_CLUSTER
-    GET_CLUSTER = TEAK.leafTeak
-    scores = testRig(dataset=MODEL(split=splitter),duplicator=DUPLICATOR)
-    for key,n in scores.items():
-      skData.append([splitter[:3]+"-"+key+"(TEAK     )"] + n.cache.all)
-    """
-  '''
-  global CLUSTERER
-  CLUSTERER = launchWhereV3
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=False)
-  for key,n in scores.items():
-    skData.append([key+"( 1st level obj )     "] + n.cache.all)
-    
-  scores = testRig(dataset=MODEL(doTune=False, weighKLOC=False),duplicator=DUPLICATOR,clstrByDcsn=True)
-  for key,n in scores.items():
-    skData.append([key+"( 2nd level obj )     "] + n.cache.all)
-  '''
   print("")
   print(str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
   print("")
@@ -290,7 +218,7 @@ def testKLOCWeighDriver():
   skData = [];
   while(tuneRatio <= 1.2):
     dataset.tuneRatio = tuneRatio
-    scores = testRig(dataset=dataset,duplicator=DUPLICATOR)
+    scores = testRig(dataset=dataset)
     for key,n in scores.items():
       skData.append([key+"( "+str(tuneRatio)+" )"] + n.cache.all)
     tuneRatio += 0.01
@@ -304,7 +232,7 @@ def testKLOCTuneDriver():
   skData = [];
   while(tuneRatio <= 1.2):
     dataset = MODEL(doTune=True, weighKLOC=False, klocWt=tuneRatio)
-    scores = testRig(dataset=dataset,duplicator=DUPLICATOR)
+    scores = testRig(dataset=dataset)
     for key,n in scores.items():
       skData.append([key+"( "+str(tuneRatio)+" )"] + n.cache.all)
     tuneRatio += 0.01
