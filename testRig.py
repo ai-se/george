@@ -9,7 +9,7 @@ import Technix.sk as sk
 import Technix.CoCoMo as CoCoMo
 
 from Models import *
-MODEL = JPL.JPL
+MODEL = maxwell.maxwell
 
 """
 Creates a generator of 1 test record 
