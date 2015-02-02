@@ -9,8 +9,7 @@ import Technix.sk as sk
 import Technix.CoCoMo as CoCoMo
 
 from Models import *
-MODEL = maxwell.maxwell
-
+MODEL = usp05.usp05
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -88,6 +87,8 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
     return (a*a + test_leaf.c**2 - b*b)/(2*test_leaf.c) # cosine rule
     
   test_leaf = leaf(duplicatedModel, test, tree)
+  if (len(test_leaf.val) < 4) :
+    test_leaf = test_leaf._up
   fastMapper(test_leaf)
   trainIPs, trainOPs = getTrainData(test_leaf.val)
   clf = LinearRegression()

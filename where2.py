@@ -13,10 +13,11 @@ from __future__ import division,print_function
 import  sys  
 sys.dont_write_bytecode = True
 from lib import *
-from Models.nasa93 import *
+from Models import *
 from numpy import var
 
-CLSTR_BY_DEC = True;
+MODEL =  nasa93.nasa93
+
 """
 
 ## Dimensionality Reduction with Fastmp
@@ -230,7 +231,7 @@ def where2(m, data, lvl=0, up=None, verbose=True):
 		return lvl > The.what.depthMax
   def tooFew() : return len(data) < The.what.minSize
   def show(suffix): 
-    if The.verbose: 
+    if The.what.verbose: 
       print(The.what.b4*lvl,len(data),
             suffix,' ; ',id(node) % 1000,sep='')
   node.median_row = data[len(data)//2]
@@ -243,6 +244,10 @@ def where2(m, data, lvl=0, up=None, verbose=True):
     if verbose:
       show("")
     wests,west, easts,east,c, mid_element = fastmap(m,data)
+    # TODO
+    #if ((len(wests)<The.what.leafThreshold) or (len(easts)<The.what.leafThreshold)):
+     # node._rows = wests + easts
+      #print(len(node._rows))
     node.update(c=c,east=east,west=west,mid_cos=mid_element[0])
     goLeft, goRight = maybePrune(m,lvl,west,east)
     if goLeft: 
@@ -281,7 +286,7 @@ the other, then ignore the other pole.
 def maybePrune(m,lvl,west,east):
   "Usually, go left then right, unless dominated."
   goLeft, goRight = True,True # default
-  if  The.prune and lvl >= The.what.depthMin:
+  if  The.what.prune and lvl >= The.what.depthMin:
     sw = scores(m, west)
     se = scores(m, east)
     if abs(sw - se) > The.wriggle: # big enough to consider
@@ -344,10 +349,13 @@ def launchWhere2(m, rows=None, verbose=True):
     s =  scores(m,r)
     told += s
   global The
-  The=defaults().update(verbose = True,
-               minSize = len(rows)**0.5,
+  The=defaults()
+  The.what.update(verbose = True,
+               minSize = max(len(rows)**0.5,8),
+               #minSize = 4,
                prune   = False,
-               wriggle = 0.3*told.sd())
+               wriggle = 0.3*told.sd(),
+               leafThreshold = 4)
   return where2(m, rows,verbose = verbose)
 
 """
@@ -431,7 +439,7 @@ def variance(m, rows):
 """
 #@go
 def _scores():
-  m = nasa93()
+  m = MODEL()
   out = []
   for row in m._rows: 
     scores(m,row)
@@ -444,7 +452,7 @@ def _scores():
 
 """
 #@go
-def _distances(m=nasa93):
+def _distances(m=MODEL):
    m=m()
    seed(The.seed)
    for i in m._rows:
@@ -463,16 +471,26 @@ def _distances(m=nasa93):
 
 """
 #@go
-def _where(m=nasa93):
-  m= m();print(m)
+def _where(m=MODEL):
+  m= m()
   seed(1)
   told=N()
   for r in m._rows:
     s =  scores(m,r)
     told += s
   global The
-  The=defaults().update(verbose = True,
-               minSize = len(m._rows)**0.5,
+  The=defaults()
+  The.what.update(verbose = True,
+               #minSize = len(m._rows)**0.5,
+               minSize = max(len(m._rows)**0.5,8),
                prune   = False,
-               wriggle = 0.3*told.sd())
+               wriggle = 0.3*told.sd(),
+               leafThreshold = 4)
   tree = where2(m, m._rows)
+  
+"""
+
+## Start-up Actions
+
+"""
+if __name__ == '__main__': _where()

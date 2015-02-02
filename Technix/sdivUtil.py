@@ -87,10 +87,6 @@ def normalize_weights(rank, maxVal, minVal):
     normal_Wt= ((maxVal - value) / (maxVal - minVal))
     weights.append(normal_Wt)
   return weights;
-  
-def test():
-  x = [1]
-  x.append(2)
-  print(x)
+
   
 #fss()
