@@ -33,12 +33,13 @@ def fastmap(m,data, what=lambda m: m.decisions):
     for i in range(len(lst)):
       if lst[i] > centroid:
         return centroid, i
-    return centroid, len(lst)
+    return centroid, len(lst)-1
   
   def sdiv(lst):
     bestVar = sys.maxint
     bestCut = len(lst)-1
-    for i in range(1,len(lst)-1):
+    #for i in range(3,(len(lst) - 3)):
+    for i in range(1,(len(lst) - 1)):
       lst_1, lst_2 = lst[:i],lst[i:]
       variance = (len(lst_1)*var(lst_1) + len(lst_2)*var(lst_2))/(len(lst_1)+len(lst_2))
       if variance < bestVar:
@@ -229,7 +230,7 @@ def where2(m, data, lvl=0, up=None, verbose=True):
   node = o(val=None,_up=up,_kids=[])
   def tooDeep():
 		return lvl > The.what.depthMax
-  def tooFew() : return len(data) < The.what.minSize
+  def tooFew() : return len(data) < m.minLeafSize
   def show(suffix): 
     if The.what.verbose: 
       print(The.what.b4*lvl,len(data),
@@ -340,7 +341,7 @@ def scores(m,it):
     it.scored = True
   return it.score
 
-def launchWhere2(m, rows=None, verbose=True):
+def launchWhere2(m, rows=None, verbose=True, minSize = None):
   seed(1)
   told=N()
   if (not rows):
@@ -351,11 +352,15 @@ def launchWhere2(m, rows=None, verbose=True):
   global The
   The=defaults()
   The.what.update(verbose = True,
-               minSize = max(len(rows)**0.5,8),
+               minSize = int(max(len(rows)**0.5,8)),
                #minSize = 4,
                prune   = False,
                wriggle = 0.3*told.sd(),
                leafThreshold = 4)
+  if minSize :
+    m.minLeafSize = minSize
+  else :
+    m.minLeafSize = The.what.minSize
   return where2(m, rows,verbose = verbose)
 
 """

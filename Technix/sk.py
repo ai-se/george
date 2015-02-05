@@ -64,10 +64,10 @@ def pairs(lst):
     last = i
 
 def xtile(lst,lo=0,hi=100,width=40,
-             #chops=[0.1 ,0.3,0.5,0.7,0.9],
-             chops=[0.25,0.5,0.75],
-             #marks=["-" ," "," ","-"," "],
-             marks=["-","-"],
+             chops=[0.1 ,0.3,0.5,0.7,0.9],
+             #chops=[0.25,0.5,0.75],
+             marks=[" ","-","-"," "],
+             #marks=["-","-"],
              bar="|",star="*",show=" %3.0f"):
   """The function _xtile_ takes a list of (possibly)
   unsorted numbers and presents them as a horizontal
@@ -94,6 +94,7 @@ def xtile(lst,lo=0,hi=100,width=40,
     marks = marks[1:]
   out[int(width/2)]    = bar
   out[place(pos(0.5))] = star
+  #print(lst)
   return '('+''.join(out) +  ")," +  pretty(what)
 
 def xtileLocalized(lst, median,width=40,

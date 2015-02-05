@@ -50,15 +50,18 @@ def sdiv(lst, tiny=2,cohen=0.3,
       recurse(this[cut:], small, cuts)
     else:   
       cuts += [(sd * len(this)/len(lst),this)]
+      #cuts += [(sd * len(this)/len(lst),[num2(row) for row in this])]
     return cuts
   #---| main |-----------------------------------
   small = Counts(num2(x) for x in lst).sd()*cohen
   if lst: 
     return recurse(sorted(lst,key=num1),small,[])
 
-def cells(dataset):
+def cells(dataset, rows=None):
+  if rows == None:
+    rows = dataset._rows
   rowCells = []
-  for row in dataset._rows:
+  for row in rows:
     rowCells += [row.cells]
   return rowCells
 

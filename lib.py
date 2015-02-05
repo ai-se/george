@@ -255,7 +255,8 @@ Code:
 """
 def data(indep=[], less=[], more=[], _rows=[],
          _tunings=[],weighFeature=True,
-         _split="variance",_isCocomo = True):
+         _split="variance",_isCocomo = True,
+         _dataTypes = None):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -269,7 +270,8 @@ def data(indep=[], less=[], more=[], _rows=[],
        names = indep+less+more,
       _tunings = _tunings,
       _split = _split,
-      _isCocomo = _isCocomo)
+      _isCocomo = _isCocomo,
+      dataTypes = _dataTypes)
   m.decisions  = [x for x in range(nindep)]
   m.objectives = [nindep+ x for x in range(ndep)]
   m.cols       = m.decisions + m.objectives

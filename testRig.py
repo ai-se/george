@@ -7,9 +7,12 @@ from lib import *
 from where2 import *
 import Technix.sk as sk
 import Technix.CoCoMo as CoCoMo
+import Technix.sdivUtil as sdivUtil
+from Technix.smote import smote
+from Technix.batman import smotify
 
 from Models import *
-MODEL = usp05.usp05
+MODEL = maxwell.maxwell
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -87,8 +90,8 @@ def linRegressCluster(score, duplicatedModel, tree, test, desired_effort):
     return (a*a + test_leaf.c**2 - b*b)/(2*test_leaf.c) # cosine rule
     
   test_leaf = leaf(duplicatedModel, test, tree)
-  if (len(test_leaf.val) < 4) :
-    test_leaf = test_leaf._up
+  #if (len(test_leaf.val) < 4) :
+   # test_leaf = test_leaf._up
   fastMapper(test_leaf)
   trainIPs, trainOPs = getTrainData(test_leaf.val)
   clf = LinearRegression()
@@ -120,8 +123,10 @@ def linearRegression(score, model, train, test, desired_effort):
 Selecting K-nearest neighbors and finding the mean
 expected effort
 """
-def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1):
-  nearestN = closestN(duplicatedModel, k, test, duplicatedModel._rows)
+def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1, rows = None):
+  if rows == None:
+    rows = duplicatedModel._rows
+  nearestN = closestN(duplicatedModel, k, test, rows)
   test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
   score += abs(desired_effort - test_effort)/desired_effort  
 
@@ -149,7 +154,7 @@ def testRig(dataset=MODEL(),
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(dataset, test)
-    tree = launchWhere2(dataset, rows=None, verbose=False)
+    tree = launchWhere2(dataset, rows=train, verbose=False)
     n = scores["clstr"]
     n.go and clusterk1(n, dataset, tree, test, desired_effort)
     n = scores["lRgCl"]
@@ -190,19 +195,20 @@ def testCoCoMo(dataset=MODEL(), a=2.94, b=0.91):
 def testDriver():
   seed(0)
   skData = []
-  dataset=MODEL()
+  split = "variance"
+  dataset=MODEL(split=split)
   if  dataset._isCocomo:
     scores = testCoCoMo(dataset)
     for key, n in scores.items():
       skData.append([key+".       ."] + n.cache.all)
-  scores = testRig(dataset=MODEL(),doCART = True, doKNN=True, doLinRg=True)
+  scores = testRig(dataset=MODEL(split=split),doCART = True, doKNN=True, doLinRg=True)
   for key,n in scores.items():
     if (key == "clstr" or key == "lRgCl"):
       skData.append([key+"(no tuning)"] + n.cache.all)
     else:
       skData.append([key+".         ."] + n.cache.all)
 
-  scores = testRig(dataset=MODEL(weighFeature = True), doKNN=True)
+  scores = testRig(dataset=MODEL(split=split, weighFeature = True), doKNN=True)
   for key,n in scores.items():
       skData.append([key+"(sdiv_wt^1)"] + n.cache.all)
     
@@ -210,8 +216,9 @@ def testDriver():
   print(str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
   print("")
   sk.rdivDemo(skData)
+  #launchWhere2(MODEL())
   
-testDriver()
+#testDriver()
 
 def testKLOCWeighDriver():
   dataset = MODEL(doTune=False, weighKLOC=True)
@@ -243,3 +250,82 @@ def testKLOCTuneDriver():
 #testKLOCTuneDriver()
 
 #testRig(dataset=MODEL(doTune=False, weighKLOC=False), duplicator=interpolateNTimes)
+
+def testOverfit(dataset= MODEL(split="median")):
+  skData = [];
+  scores= dict(splitSize_2=N(),splitSize_4=N(),splitSize_8=N())
+  for score in scores.values():
+    score.go=True
+  for test, train in loo(dataset._rows):
+    say(".")
+    desired_effort = effort(dataset, test)
+    tree = launchWhere2(dataset, rows=train, verbose=False, minSize=2)
+    n = scores["splitSize_2"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort)
+    tree = launchWhere2(dataset, rows=train, verbose=False, minSize=4)
+    n = scores["splitSize_4"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort)
+    tree = launchWhere2(dataset, rows=train, verbose=False, minSize=8)
+    n = scores["splitSize_8"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort)
+  
+  for key,n in scores.items():
+      skData.append([key] + n.cache.all)
+  print("")
+  sk.rdivDemo(skData)
+  
+#testOverfit()
+
+def testSmote():
+  dataset=MODEL(split="variance", weighFeature=True)
+  launchWhere2(dataset, verbose=False)
+  skData = [];
+  scores= dict(sm_knn_1_w=N(), sm_knn_3_w=N(), CART=N())
+  for score in scores.values():
+    score.go=True
+  
+  for test, train in loo(dataset._rows):
+    say(".")
+    desired_effort = effort(dataset, test)
+    clones = smotify(dataset, train,k=3, factor=10)
+    n = scores["CART"]
+    n.go and CART(dataset, scores["CART"], train, test, desired_effort)
+    n = scores["sm_knn_1_w"]
+    n.go and kNearestNeighbor(n, dataset, test, desired_effort, 1, clones)
+    n = scores["sm_knn_3_w"]
+    n.go and kNearestNeighbor(n, dataset, test, desired_effort, 3, clones)
+  
+  for key,n in scores.items():
+    skData.append([key] + n.cache.all)
+  if dataset._isCocomo:
+    for key,n in testCoCoMo(dataset).items():
+      skData.append([key] + n.cache.all)
+  
+  scores= dict(knn_1=N(), knn_3=N())
+  dataset=MODEL(split="variance", weighFeature=True)
+  for test, train in loo(dataset._rows):
+    say(".")
+    desired_effort = effort(dataset, test)
+    n = scores["knn_1"]
+    kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
+    n = scores["knn_3"]
+    kNearestNeighbor(n, dataset, test, desired_effort, 3, train)
+  for key,n in scores.items():
+    skData.append([key] + n.cache.all)
+    
+  scores= dict(knn_1_w=N(), knn_3_w=N())
+  dataset=MODEL(split="variance")
+  for test, train in loo(dataset._rows):
+    say(".")
+    desired_effort = effort(dataset, test)
+    n = scores["knn_1_w"]
+    kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
+    n = scores["knn_3_w"]
+    kNearestNeighbor(n, dataset, test, desired_effort, 3, train)
+  for key,n in scores.items():
+    skData.append([key] + n.cache.all)
+    
+  print("")
+  sk.rdivDemo(skData)
+  
+testSmote()
