@@ -12,7 +12,7 @@ from Technix.smote import smote
 from Technix.batman import smotify
 
 from Models import *
-MODEL = maxwell.maxwell
+MODEL = JPL.JPL
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -163,11 +163,11 @@ def testRig(dataset=MODEL(),
       CART(dataset, scores["CARTT"], train, test, desired_effort)
     if doKNN:
       n = scores["knn_1"]
-      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=1)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=1, rows=train)
       n = scores["knn_3"]
-      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=3)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=3, rows=train)
       n = scores["knn_5"]
-      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=5)
+      n.go and kNearestNeighbor(n, dataset, test, desired_effort, k=5, rows=train)
     if doLinRg:
       n = scores["linRg"]
       n.go and linearRegression(n, dataset, train, test, desired_effort)
@@ -218,7 +218,7 @@ def testDriver():
   sk.rdivDemo(skData)
   #launchWhere2(MODEL())
   
-#testDriver()
+testDriver()
 
 def testKLOCWeighDriver():
   dataset = MODEL(doTune=False, weighKLOC=True)
@@ -287,7 +287,7 @@ def testSmote():
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(dataset, test)
-    clones = smotify(dataset, train,k=3, factor=10)
+    clones = smotify(dataset, train,k=5, factor=100)
     n = scores["CART"]
     n.go and CART(dataset, scores["CART"], train, test, desired_effort)
     n = scores["sm_knn_1_w"]
@@ -306,9 +306,9 @@ def testSmote():
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(dataset, test)
-    n = scores["knn_1"]
+    n = scores["knn_1_w"]
     kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
-    n = scores["knn_3"]
+    n = scores["knn_3_w"]
     kNearestNeighbor(n, dataset, test, desired_effort, 3, train)
   for key,n in scores.items():
     skData.append([key] + n.cache.all)
@@ -318,9 +318,9 @@ def testSmote():
   for test, train in loo(dataset._rows):
     say(".")
     desired_effort = effort(dataset, test)
-    n = scores["knn_1_w"]
+    n = scores["knn_1"]
     kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
-    n = scores["knn_3_w"]
+    n = scores["knn_3"]
     kNearestNeighbor(n, dataset, test, desired_effort, 3, train)
   for key,n in scores.items():
     skData.append([key] + n.cache.all)
