@@ -12,7 +12,7 @@ from Technix.smote import smote
 from Technix.batman import smotify
 
 from Models import *
-MODEL = JPL.JPL
+MODEL = usp05.usp05
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -195,7 +195,7 @@ def testCoCoMo(dataset=MODEL(), a=2.94, b=0.91):
 def testDriver():
   seed(0)
   skData = []
-  split = "variance"
+  split = "median"
   dataset=MODEL(split=split)
   if  dataset._isCocomo:
     scores = testCoCoMo(dataset)
@@ -328,4 +328,4 @@ def testSmote():
   print("")
   sk.rdivDemo(skData)
   
-testSmote()
+#testSmote()

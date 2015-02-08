@@ -352,8 +352,9 @@ def launchWhere2(m, rows=None, verbose=True, minSize = None):
   global The
   The=defaults()
   The.what.update(verbose = True,
-               minSize = int(max(len(rows)**0.5,8)),
+               #minSize = int(max(len(rows)**0.5,8)),
                #minSize = 4,
+               minSize = int(len(rows)**0.5),
                prune   = False,
                wriggle = 0.3*told.sd(),
                leafThreshold = 4)
