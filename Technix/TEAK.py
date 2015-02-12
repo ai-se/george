@@ -1,6 +1,7 @@
 from __future__ import division,print_function
 import  sys  
 sys.dont_write_bytecode = True
+sys.path.extend(['/home/george/Panzer/Raise/Nasa 93'])
 from lib import *
 from where2 import *
 from Models.nasa93 import *
@@ -33,4 +34,6 @@ def leafTeak(m,one,node):
   elif len(node._kids) == 1:
     return node._kids[0]
   return node
-teak()
+
+if __name__ == "__main__":
+  teak()

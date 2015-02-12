@@ -1,3 +1,7 @@
+'''
+SMOTE Experiments
+'''
+
 from __future__ import division,print_function
 import sys
 sys.path.extend(['/home/george/Panzer/Raise/Nasa 93'])

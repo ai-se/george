@@ -237,6 +237,8 @@ def where2(m, data, lvl=0, up=None, verbose=True):
             suffix,' ; ',id(node) % 1000,sep='')
   node.median_row = data[len(data)//2]
   node.variance = variance(m, data)
+  if ((not hasattr(m, "max_variance")) or m.max_variance < node.variance):
+    m.max_variance = node.variance
   node.val = data
   if tooDeep() or tooFew():
     if verbose:
