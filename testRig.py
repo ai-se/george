@@ -490,7 +490,7 @@ def testEverything(model = MODEL):
 
   
 def runAllModels(test_name):
-  models = [nasa93.nasa93, coc81.coc81, JPL.JPL, coc2010.coc2010,
+  models = [nasa93.nasa93, coc81.coc81, Mystery1.Mystery1, Mystery2.Mystery2,
             albrecht.albrecht, kemerer.kemerer, kitchenham.kitchenham,
            maxwell.maxwell, miyazaki.miyazaki, telecom.telecom, usp05.usp05,
            china.china, cosmic.cosmic, isbsg10.isbsg10]

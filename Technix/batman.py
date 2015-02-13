@@ -13,7 +13,7 @@ from Models import *
 from sdivUtil import sdiv, cells
 from smote import smote
 
-MODEL = JPL.JPL
+MODEL = Mystery1.Mystery1
 
 def klazzify(model = MODEL(), rows = None):
   if rows == None:
