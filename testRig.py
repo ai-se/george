@@ -371,9 +371,49 @@ def testSmote():
   print("")
   sk.rdivDemo(skData)
   
-#testSmote()
-
-def testForPaper(model = MODEL):
+def testForPaper(model=MODEL):
+  split="median"
+  print(model.__name__.upper())
+  dataset=model(split=split, weighFeature=False)
+  print(str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
+  dataset_weighted = model(split=split, weighFeature=True)
+  launchWhere2(dataset, verbose=False)
+  skData = []
+  if dataset._isCocomo:
+    for key,n in testCoCoMo(dataset).items():
+      skData.append([key] + n.cache.all)
+  scores = dict(CART = N(), knn_1 = N(),
+                knn_3 = N(),LSR = N(), 
+                wt_clstr_wdMn2=N())
+  for score in scores.values():
+    score.go=True
+  for test, train in loo(dataset._rows):
+    desired_effort = effort(dataset, test)
+    tree = launchWhere2(dataset, rows=train, verbose=False)
+    n = scores["LSR"]
+    n.go and linearRegression(n, dataset, train, test, desired_effort)
+    n = scores["CART"]
+    n.go and CART(dataset, scores["CART"], train, test, desired_effort)
+    n = scores["knn_1"]
+    n.go and kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
+    n = scores["knn_3"]
+    n.go and kNearestNeighbor(n, dataset, test, desired_effort, 3, train)
+  
+  for test, train in loo(dataset_weighted._rows):
+    desired_effort = effort(dataset, test)
+    tree_weighted, leafFunc = launchWhere2(dataset_weighted, rows=train, verbose=False), leaf
+    n = scores["wt_clstr_wdMn2"]
+    n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+  
+  for key,n in scores.items():
+    skData.append([key] + n.cache.all)
+  
+  print("")
+  sk.rdivDemo(skData)
+  print("");print("")
+    
+  
+def testEverything(model = MODEL):
   split="median"
   print(model.__name__.upper())
   dataset=model(split=split, weighFeature=False)
@@ -448,14 +488,17 @@ def testForPaper(model = MODEL):
   sk.rdivDemo(skData)
   print("");print("")
 
-def runAllModels():
+  
+def runAllModels(test_name):
   models = [nasa93.nasa93, coc81.coc81, JPL.JPL, coc2010.coc2010,
             albrecht.albrecht, kemerer.kemerer, kitchenham.kitchenham,
            maxwell.maxwell, miyazaki.miyazaki, telecom.telecom, usp05.usp05,
            china.china, cosmic.cosmic, isbsg10.isbsg10]
   for model in models:
-    testForPaper(model)
+    test_name(model)
+    
+
 
 if __name__ == "__main__":
-  #testForPaper()
-  runAllModels()
+  #testForPaper(nasa93.nasa93)
+  runAllModels(testForPaper)
