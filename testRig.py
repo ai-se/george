@@ -78,6 +78,27 @@ def clusterWeightedMean2(score, duplicatedModel, tree, test, desired_effort, lea
     error = abs(desired_effort - test_effort)/desired_effort  
   score += error
   
+def clusterVasil(score, duplicatedModel, tree, test, desired_effort, leafFunc, k):
+  test_leaf = leafFunc(duplicatedModel, test, tree)
+  if k > len(test_leaf.val):
+    k = len(test_leaf.val)
+  nearestN = closestN(duplicatedModel, k, test, test_leaf.val)
+  if (len(nearestN)==1) :
+    nearest_row = nearestN[0][1]
+    test_effort = effort(duplicatedModel, nearest_row)
+    error = abs(desired_effort - test_effort)/desired_effort
+  else :
+    nearestk = nearestN[:k]
+    test_effort, sum_wt = 0,0
+    for dist, row in nearestk:
+      test_effort += (1/(dist+0.000001))*effort(duplicatedModel,row)
+      sum_wt += (1/(dist+0.000001))
+    test_effort = test_effort / sum_wt
+    error = abs(desired_effort - test_effort)/desired_effort  
+  score += error
+  
+  
+  
 """
 Performing LinearRegression inside a cluster
 to estimate effort
@@ -383,15 +404,19 @@ def testForPaper(model=MODEL):
     for key,n in testCoCoMo(dataset).items():
       skData.append([key] + n.cache.all)
   scores = dict(CART = N(), knn_1 = N(),
-                knn_3 = N(),LSR = N(), 
-                wt_clstr_wdMn2=N())
+                knn_3 = N(), TEAK = N(),
+                vasil_2=N(), vasil_3=N(),
+                vasil_4=N(), vasil_5=N(),)
   for score in scores.values():
     score.go=True
   for test, train in loo(dataset._rows):
     desired_effort = effort(dataset, test)
     tree = launchWhere2(dataset, rows=train, verbose=False)
-    n = scores["LSR"]
-    n.go and linearRegression(n, dataset, train, test, desired_effort)
+    tree_teak = teak(dataset, rows = train)
+    #n = scores["LSR"]
+    #n.go and linearRegression(n, dataset, train, test, desired_effort)
+    n = scores["TEAK"]
+    n.go and clusterk1(n, dataset, tree_teak, test, desired_effort, leafTeak)
     n = scores["CART"]
     n.go and CART(dataset, scores["CART"], train, test, desired_effort)
     n = scores["knn_1"]
@@ -402,8 +427,14 @@ def testForPaper(model=MODEL):
   for test, train in loo(dataset_weighted._rows):
     desired_effort = effort(dataset, test)
     tree_weighted, leafFunc = launchWhere2(dataset_weighted, rows=train, verbose=False), leaf
-    n = scores["wt_clstr_wdMn2"]
-    n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n = scores["vasil_2"]
+    n.go and clusterVasil(n, dataset_weighted, tree_weighted, test, desired_effort,leafFunc,2)
+    n = scores["vasil_3"]
+    n.go and clusterVasil(n, dataset_weighted, tree_weighted, test, desired_effort,leafFunc,3)
+    n = scores["vasil_4"]
+    n.go and clusterVasil(n, dataset_weighted, tree_weighted, test, desired_effort,leafFunc,4)
+    n = scores["vasil_5"]
+    n.go and clusterVasil(n, dataset_weighted, tree_weighted, test, desired_effort,leafFunc,5)
   
   for key,n in scores.items():
     skData.append([key] + n.cache.all)
