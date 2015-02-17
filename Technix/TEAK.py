@@ -35,5 +35,21 @@ def leafTeak(m,one,node):
     return node._kids[0]
   return node
 
+def teakImproved(d=nasa93(), rows=None, verbose=False):
+  rootNode = launchWhere2(d, rows, verbose)
+  truncatedRows = []
+  allLeaves = []
+  for leaf, level in leaves(rootNode):
+    allLeaves.append(leaf)
+    
+  for leaf in allLeaves:
+    if ((leaf.variance > 1.25*leaf._up.variance) or (leaf.variance > 0.75*d.max_variance)):
+      truncatedRows += leaf.val
+      
+  newRows = [row for row in rootNode.val if row not in truncatedRows]
+  
+  return launchWhere2(d, newRows, verbose)
+  
+
 if __name__ == "__main__":
-  teak()
+  teakImproved()

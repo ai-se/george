@@ -13,7 +13,7 @@ from lib import *
 Data:
 Possible Splits= ["variance", "centroid", "median"]
 """
-def nasa93(weighFeature = False, split = "variance"):
+def nasa93(weighFeature = False, split = "median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
      # 0..8

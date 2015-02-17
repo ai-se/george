@@ -10,7 +10,7 @@ import Technix.CoCoMo as CoCoMo
 import Technix.sdivUtil as sdivUtil
 from Technix.smote import smote
 from Technix.batman import smotify
-from Technix.TEAK import teak, leafTeak
+from Technix.TEAK import teak, leafTeak, teakImproved
 from Models import *
 MODEL = usp05.usp05
 """
@@ -446,19 +446,20 @@ def testForPaper(model=MODEL):
   
 def testEverything(model = MODEL):
   split="median"
-  print(model.__name__.upper())
+  print('###'+model.__name__.upper())
   dataset=model(split=split, weighFeature=False)
-  print(str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
+  print('####'+str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
   dataset_weighted = model(split=split, weighFeature=True)
   launchWhere2(dataset, verbose=False)
   skData = [];
   scores= dict(TEAK=N(), linear_reg=N(), CART=N(),
-               linRgCl_wt=N(), clstr_whr_wt=N(),
+               wt_linRgCl=N(), wt_clstr_whr=N(),
                linRgCl=N(), clstr_whr=N(),
-               t_linRgCl_wt=N(), t_clstr_whr_wt=N(),
-               knn_1=N(), knn_1_wt=N(), 
-               clstrMn2=N(), clstrMn2_wt=N(), t_clstrMn2_wt=N(),
-               clstrWdMn2=N(), clstrWdMn2_wt=N(), t_clstrWdMn2_wt=N())
+               t_wt_linRgCl=N(), t_wt_clstr_whr=N(),
+               knn_1=N(), wt_knn_1=N(), 
+               clstrMn2=N(), wt_clstrMn2=N(), t_wt_clstrMn2=N(),
+               clstrWdMn2=N(), wt_clstrWdMn2=N(), t_wt_clstrWdMn2=N(),
+               t_clstr_whr=N(), t_linRgCl=N(), t_clstrMn2=N(),t_clstrWdMn2=N())
   #scores= dict(TEAK=N(), linear_reg=N(), linRgCl=N())
   for score in scores.values():
     score.go=True
@@ -466,9 +467,91 @@ def testEverything(model = MODEL):
     #say(".")
     desired_effort = effort(dataset, test)
     tree = launchWhere2(dataset, rows=train, verbose=False)
-    tree_teak = teak(dataset, rows = train)
+    tree_teak = teakImproved(dataset, rows = train)
     n = scores["TEAK"]
-    n.go and clusterk1(n, dataset, tree_teak, test, desired_effort, leafTeak)
+    n.go and clusterk1(n, dataset, tree_teak, test, desired_effort, leaf)
+    n = scores["linear_reg"]
+    n.go and linearRegression(n, dataset, train, test, desired_effort)
+    n = scores["clstr_whr"]
+    n.go and clusterk1(n, dataset, tree, test, desired_effort, leaf)
+    n = scores["linRgCl"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort, leaf)
+    n = scores["knn_1"]
+    n.go and kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
+    n = scores["clstrMn2"]
+    n.go and clustermean2(n, dataset, tree, test, desired_effort, leaf)
+    n = scores["clstrWdMn2"]
+    n.go and clusterWeightedMean2(n, dataset, tree, test, desired_effort, leaf)
+    n = scores["CART"]
+    n.go and CART(dataset, scores["CART"], train, test, desired_effort)
+    
+    tree, leafFunc = teakImproved(dataset, rows=train, verbose=False),leaf
+    n = scores["t_clstr_whr"]
+    n.go and clusterk1(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    n = scores["t_linRgCl"]
+    n.go and linRegressCluster(n, dataset_weighted, tree, test, desired_effort, leafFunc=leafFunc)
+    n = scores["t_clstrMn2"]
+    n.go and clustermean2(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    n = scores["t_clstrWdMn2"]
+    n.go and clusterWeightedMean2(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    
+  for test, train in loo(dataset_weighted._rows):
+    #say(".")
+    desired_effort = effort(dataset_weighted, test)
+    
+    tree_weighted, leafFunc = launchWhere2(dataset_weighted, rows=train, verbose=False), leaf
+    n = scores["wt_clstr_whr"]
+    n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n = scores["wt_linRgCl"]
+    n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc)
+    n = scores["wt_clstrMn2"]
+    n.go and clustermean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n = scores["wt_clstrWdMn2"]
+    n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    
+    tree_weighted, leafFunc = teakImproved(dataset_weighted, rows=train, verbose=False),leaf
+    n = scores["t_wt_clstr_whr"]
+    n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n = scores["t_wt_linRgCl"]
+    n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc)
+    n = scores["wt_knn_1"]
+    n.go and kNearestNeighbor(n, dataset_weighted, test, desired_effort, 1, train)
+    n = scores["t_wt_clstrMn2"]
+    n.go and clustermean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n = scores["t_wt_clstrWdMn2"]
+    n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    
+  for key,n in scores.items():
+    skData.append([key] + n.cache.all)
+  if dataset._isCocomo:
+    for key,n in testCoCoMo(dataset).items():
+      skData.append([key] + n.cache.all)  
+  print("```")
+  sk.rdivDemo(skData)
+  print("```");print("")
+
+  
+def testTeakified(model = MODEL):
+  split="median"
+  print('###'+model.__name__.upper())
+  dataset=model(split=split, weighFeature=False)
+  print('####'+str(len(dataset._rows)) + " data points,  " + str(len(dataset.indep)) + " attributes")
+  dataset_weighted = model(split=split, weighFeature=True)
+  launchWhere2(dataset, verbose=False)
+  skData = [];
+  scores= dict(linear_reg=N(), CART=N(),
+               linRgCl_wt=N(), clstr_whr_wt=N(),
+               linRgCl=N(), clstr_whr=N(),
+               knn_1=N(), knn_1_wt=N(), 
+               clstrMn2=N(), clstrMn2_wt=N(),
+               clstrWdMn2=N(), clstrWdMn2_wt=N())
+  #scores= dict(TEAK=N(), linear_reg=N(), linRgCl=N())
+  for score in scores.values():
+    score.go=True
+  for test, train in loo(dataset._rows):
+    #say(".")
+    desired_effort = effort(dataset, test)
+    tree = teakImproved(dataset, rows=train, verbose=False)
     n = scores["linear_reg"]
     n.go and linearRegression(n, dataset, train, test, desired_effort)
     n = scores["clstr_whr"]
@@ -488,7 +571,7 @@ def testEverything(model = MODEL):
     #say(".")
     desired_effort = effort(dataset_weighted, test)
     
-    tree_weighted, leafFunc = launchWhere2(dataset_weighted, rows=train, verbose=False), leaf
+    tree_weighted, leafFunc = teakImproved(dataset_weighted, rows=train, verbose=False), leaf
     n = scores["clstr_whr_wt"]
     n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
     n = scores["linRgCl_wt"]
@@ -497,28 +580,18 @@ def testEverything(model = MODEL):
     n.go and clustermean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
     n = scores["clstrWdMn2_wt"]
     n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
-    
-    tree_weighted, leafFunc = teak(dataset_weighted, rows=train, verbose=False),leafTeak
-    n = scores["t_clstr_whr_wt"]
-    n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
-    n = scores["t_linRgCl_wt"]
-    n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc)
     n = scores["knn_1_wt"]
-    n.go and kNearestNeighbor(n, dataset_weighted, test, desired_effort, 1, train)
-    n = scores["t_clstrMn2_wt"]
-    n.go and clustermean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
-    n = scores["t_clstrWdMn2_wt"]
-    n.go and clusterWeightedMean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
+    n.go and kNearestNeighbor(n, dataset_weighted, test, desired_effort, 1, train)    
     
   for key,n in scores.items():
     skData.append([key] + n.cache.all)
   if dataset._isCocomo:
     for key,n in testCoCoMo(dataset).items():
       skData.append([key] + n.cache.all)  
-  print("")
+  print("```")
   sk.rdivDemo(skData)
-  print("");print("")
-
+  print("```");print("")
+  
   
 def runAllModels(test_name):
   models = [nasa93.nasa93, coc81.coc81, Mystery1.Mystery1, Mystery2.Mystery2,
@@ -532,4 +605,4 @@ def runAllModels(test_name):
 
 if __name__ == "__main__":
   #testForPaper(nasa93.nasa93)
-  runAllModels(testForPaper)
+  runAllModels(testEverything)

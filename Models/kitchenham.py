@@ -20,7 +20,7 @@ from lib import *
 """
 
 def kitchenham(weighFeature = False, 
-           split = "variance"):
+           split = "median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   A=1;C=2;D=3;P=CAE=4;Pr=EO=5;U=W=6
   return data(indep= [ 

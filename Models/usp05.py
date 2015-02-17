@@ -19,7 +19,7 @@ from  lib import *
 Data:
 """
 def usp05(weighFeature = False,
-        split="variance"):
+        split="median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0;
   FT=0;PJ=1;RQ=2;NULL=0;
   return data(indep= [ 
