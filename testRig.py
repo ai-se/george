@@ -103,7 +103,7 @@ def clusterVasil(score, duplicatedModel, tree, test, desired_effort, leafFunc, k
 Performing LinearRegression inside a cluster
 to estimate effort
 """
-def linRegressCluster(score, duplicatedModel, tree, test, desired_effort, leafFunc=leaf, doSmote=True):
+def linRegressCluster(score, duplicatedModel, tree, test, desired_effort, leafFunc=leaf, doSmote=False):
   
   def getTrainData(rows):
     trainIPs, trainOPs = [], []
@@ -192,6 +192,19 @@ def CART(dataset, score, cartIP, test, desired_effort):
   decTree.fit(trainIp,trainOp)
   test_effort = decTree.predict(testIp)[0]
   score += abs(desired_effort - test_effort)/desired_effort
+
+  
+def showWeights(model):
+  outputStr=""
+  i=0
+  for wt, att in sorted(zip(model.weights, model.indep)):
+    outputStr += att + " : " + str(round(wt,2))
+    i+=1
+    if i%5==0:
+      outputStr += "\n"
+    else:
+      outputStr += "\t"
+  return outputStr.strip()
   
 def testRig(dataset=MODEL(), 
             doCART = False,doKNN = False, doLinRg = False):
@@ -459,7 +472,8 @@ def testEverything(model = MODEL):
                knn_1=N(), wt_knn_1=N(), 
                clstrMn2=N(), wt_clstrMn2=N(), t_wt_clstrMn2=N(),
                clstrWdMn2=N(), wt_clstrWdMn2=N(), t_wt_clstrWdMn2=N(),
-               t_clstr_whr=N(), t_linRgCl=N(), t_clstrMn2=N(),t_clstrWdMn2=N())
+               t_clstr_whr=N(), t_linRgCl=N(), t_clstrMn2=N(),t_clstrWdMn2=N(),
+               linRgCl_sm=N(),t_wt_linRgCl_sm=N(),wt_linRgCl_sm=N(),t_linRgCl_sm=N())
   #scores= dict(TEAK=N(), linear_reg=N(), linRgCl=N())
   for score in scores.values():
     score.go=True
@@ -476,6 +490,8 @@ def testEverything(model = MODEL):
     n.go and clusterk1(n, dataset, tree, test, desired_effort, leaf)
     n = scores["linRgCl"]
     n.go and linRegressCluster(n, dataset, tree, test, desired_effort, leaf)
+    n = scores["linRgCl_sm"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort, leaf, doSmote=True)
     n = scores["knn_1"]
     n.go and kNearestNeighbor(n, dataset, test, desired_effort, 1, train)
     n = scores["clstrMn2"]
@@ -487,13 +503,15 @@ def testEverything(model = MODEL):
     
     tree, leafFunc = teakImproved(dataset, rows=train, verbose=False),leaf
     n = scores["t_clstr_whr"]
-    n.go and clusterk1(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    n.go and clusterk1(n, dataset, tree, test, desired_effort, leafFunc)
     n = scores["t_linRgCl"]
-    n.go and linRegressCluster(n, dataset_weighted, tree, test, desired_effort, leafFunc=leafFunc)
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort, leafFunc=leafFunc)
+    n = scores["t_linRgCl_sm"]
+    n.go and linRegressCluster(n, dataset, tree, test, desired_effort, leafFunc, doSmote=True)
     n = scores["t_clstrMn2"]
-    n.go and clustermean2(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    n.go and clustermean2(n, dataset, tree, test, desired_effort, leafFunc)
     n = scores["t_clstrWdMn2"]
-    n.go and clusterWeightedMean2(n, dataset_weighted, tree, test, desired_effort, leafFunc)
+    n.go and clusterWeightedMean2(n, dataset, tree, test, desired_effort, leafFunc)
     
   for test, train in loo(dataset_weighted._rows):
     #say(".")
@@ -504,6 +522,8 @@ def testEverything(model = MODEL):
     n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
     n = scores["wt_linRgCl"]
     n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc)
+    n = scores["wt_linRgCl_sm"]
+    n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc, doSmote=True)
     n = scores["wt_clstrMn2"]
     n.go and clustermean2(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
     n = scores["wt_clstrWdMn2"]
@@ -514,6 +534,8 @@ def testEverything(model = MODEL):
     n.go and clusterk1(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc)
     n = scores["t_wt_linRgCl"]
     n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc=leafFunc)
+    n = scores["t_wt_linRgCl_sm"]
+    n.go and linRegressCluster(n, dataset_weighted, tree_weighted, test, desired_effort, leafFunc, doSmote=True)
     n = scores["wt_knn_1"]
     n.go and kNearestNeighbor(n, dataset_weighted, test, desired_effort, 1, train)
     n = scores["t_wt_clstrMn2"]
@@ -525,7 +547,11 @@ def testEverything(model = MODEL):
     skData.append([key] + n.cache.all)
   if dataset._isCocomo:
     for key,n in testCoCoMo(dataset).items():
-      skData.append([key] + n.cache.all)  
+      skData.append([key] + n.cache.all)
+  print("\n####Attributes")
+  print("```")
+  print(showWeights(dataset_weighted))
+  print("```\n")
   print("```")
   sk.rdivDemo(skData)
   print("```");print("")
@@ -588,6 +614,7 @@ def testTeakified(model = MODEL):
   if dataset._isCocomo:
     for key,n in testCoCoMo(dataset).items():
       skData.append([key] + n.cache.all)  
+  
   print("```")
   sk.rdivDemo(skData)
   print("```");print("")
@@ -601,8 +628,14 @@ def runAllModels(test_name):
   for model in models:
     test_name(model)
     
-
+def printAttributes(model):
+  dataset_weighted = model(split="median", weighFeature=True)
+  print('###'+model.__name__.upper())
+  print("\n####Attributes")
+  print("```")
+  print(showWeights(dataset_weighted))
+  print("```\n")
 
 if __name__ == "__main__":
-  #testForPaper(nasa93.nasa93)
-  runAllModels(testEverything)
+  #testEverything(Mystery1.Mystery1)
+  runAllModels(printAttributes)
