@@ -1,0 +1,18 @@
+annova 
+significance tests : randomness 
+Bootstrapping : Non parametric statistical test.
+Apply test stat on original pop and compare with all 
+
+effect size : is it inteeresting 
+  A12
+  cliffsdelta
+  cohen = 0.3 * sd
+  hedges = 
+ 
+ Parameteric Effect Size Test:
+    We assume parameters
+    
+    
+Mrs Mittas 2013
+
+Make stat tests and compare them with the  help of 

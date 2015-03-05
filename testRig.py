@@ -12,7 +12,7 @@ from Technix.smote import smote
 from Technix.batman import smotify
 from Technix.TEAK import teak, leafTeak, teakImproved
 from Models import *
-MODEL = usp05.usp05
+MODEL = Mystery1.Mystery1
 """
 Creates a generator of 1 test record 
 and rest training records
@@ -637,5 +637,5 @@ def printAttributes(model):
   print("```\n")
 
 if __name__ == "__main__":
-  #testEverything(Mystery1.Mystery1)
-  runAllModels(printAttributes)
+  testEverything(Mystery1.Mystery1)
+  #runAllModels(printAttributes)
