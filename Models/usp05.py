@@ -241,7 +241,8 @@ def usp05(weighFeature = False,
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     weighFeature = weighFeature,
     _split = split,
-    _isCocomo = False
+    _isCocomo = False,
+    ignores=[5]
     )
 """
 

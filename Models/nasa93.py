@@ -128,7 +128,8 @@ def nasa93(weighFeature = False, split = "median"):
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     weighFeature = weighFeature,
     _split = split,
-    _dataTypes = [int]*22 + [float]*4
+    _dataTypes = [int]*22 + [float]*4,
+    ignores=[22]
     )
 """
 

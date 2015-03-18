@@ -73,11 +73,14 @@ def fss(d):
               num1 = lambda x:x[i],
               num2 = lambda x:x[len(d.indep)])
     xpect = sum(map(lambda x: x[0],xs))
-    if xpect < minVal:
-      minVal = xpect
-    elif xpect > maxVal:
-      maxVal = xpect
-    rank += [(xpect,i)]
+    if i not in d.ignores:
+      if xpect < minVal:
+        minVal = xpect
+      elif xpect > maxVal:
+        maxVal = xpect
+      rank += [(xpect,i)]
+    else:
+      rank += [(None,i)]
   d.weights = normalize_weights(rank, maxVal, minVal)
   return d
   
@@ -87,8 +90,11 @@ def normalize_weights(rank, maxVal, minVal):
   weights = []
   for value, dimension in sortedRank:
     # TODO Raise to power 2 and try
-    normal_Wt= ((maxVal - value) / (maxVal - minVal))
-    weights.append(normal_Wt)
+    if value:
+      normal_Wt= ((maxVal - value) / (maxVal - minVal))
+      weights.append(normal_Wt)
+    else:
+      weights.append(0)
   return weights;
 
   

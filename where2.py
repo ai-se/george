@@ -120,8 +120,9 @@ def dist(m,i,j,
       inc = (m.weights[c] * (n1 - n2))**2
     else :
       inc = (n1-n2)**2
-    deltas += inc
-    n += abs(m.w[c])
+    if c not in m.ignores:
+      deltas += inc
+      n += abs(m.w[c])
   return deltas**0.5 / n**0.5
 
 """

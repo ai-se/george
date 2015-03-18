@@ -98,7 +98,8 @@ def coc81(weighFeature = False,
     'Pmat',   7.80, 6.24, 4.68, 3.12, 1.56, _ ],[
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     weighFeature = weighFeature,
-    _split = split
+    _split = split,
+    ignores=[22]
     )
 """
 
