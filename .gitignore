@@ -2,3 +2,6 @@
 References/icse14-v5.py
 Models/Mystery1.py
 Models/Mystery2.py
+
+.DS_Store
+.idea/

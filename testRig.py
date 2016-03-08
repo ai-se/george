@@ -663,6 +663,6 @@ def testNoth(model=MODEL):
   print("```");print("")
     
 if __name__ == "__main__":
-  #testEverything(MODEL)
-  runAllModels(testEverything)
+  testEverything(albrecht.albrecht)
+  #runAllModels(testEverything)
   #testNoth(MODEL)
