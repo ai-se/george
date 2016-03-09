@@ -1,7 +1,7 @@
 from __future__ import division,print_function
 import sys, random, math
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier 
+from sklearn.tree import DecisionTreeClassifier , DecisionTreeRegressor
 from sklearn.linear_model import LinearRegression
 from lib import *
 from where2 import *
@@ -56,6 +56,11 @@ def clusterk1(score, duplicatedModel, tree, test, desired_effort, leafFunc):
   error = abs(desired_effort - test_effort)/desired_effort
   #print("clusterk1", test_effort, desired_effort, error)
   score += error
+
+def cluster_nearest(model, tree, test, leaf_func):
+  test_leaf = leaf_func(model, test, tree)
+  nearest_row = closest(model, test, test_leaf.val)
+  return effort(model, nearest_row)
   
 def clustermean2(score, duplicatedModel, tree, test, desired_effort, leafFunc):
   test_leaf = leafFunc(duplicatedModel, test, tree)
@@ -68,7 +73,14 @@ def clustermean2(score, duplicatedModel, tree, test, desired_effort, leafFunc):
     test_effort = sum(map(lambda x:effort(duplicatedModel, x[1]), nearestN[:2]))/2
     error = abs(desired_effort - test_effort)/desired_effort  
   score += error
-  
+
+def cluster_weighted_mean2(model, tree, test, leaf_func):
+  test_leaf = leaf_func(model, test, tree)
+  nearest_rows = closestN(model, 2, test, test_leaf.val)
+  wt_0 = nearest_rows[1][0]/(nearest_rows[0][0] + nearest_rows[1][0] + 0.000001)
+  wt_1 = nearest_rows[0][0]/(nearest_rows[0][0] + nearest_rows[1][0] + 0.000001)
+  return effort(model, nearest_rows[0][1]) * wt_0 + effort(model, nearest_rows[1][1]) * wt_1
+
 def clusterWeightedMean2(score, duplicatedModel, tree, test, desired_effort, leafFunc):
   test_leaf = leafFunc(duplicatedModel, test, tree)
   nearestN = closestN(duplicatedModel, 2, test, test_leaf.val)
@@ -195,18 +207,34 @@ def kNearestNeighbor(score, duplicatedModel, test, desired_effort, k=1, rows = N
     rows = duplicatedModel._rows
   nearestN = closestN(duplicatedModel, k, test, rows)
   test_effort = sorted(map(lambda x:effort(duplicatedModel, x[1]), nearestN))[k//2]
-  score += abs(desired_effort - test_effort)/desired_effort  
+  score += abs(desired_effort - test_effort)/desired_effort
+
+def knn_1(model, row, rest):
+  closest_1 = closestN(model, 1, row, rest)[0][1]
+  return effort(model, closest_1)
+
+def knn_3(model, row, rest):
+  closest_3 = closestN(model, 3, row, rest)
+  a = effort(model, closest_3[0][1])
+  b = effort(model, closest_3[1][1])
+  c = effort(model, closest_3[2][1])
+  return (50*a + 33*b + 17*c)/100
 
 """
 Classification and Regression Trees from sk-learn
 """
 def CART(dataset, score, cartIP, test, desired_effort):
   trainIp, trainOp, testIp, testOp = formatForCART(dataset, test,cartIP);
-  decTree = DecisionTreeClassifier(criterion="entropy", random_state=1)
+  decTree = DecisionTreeRegressor(criterion="mse", random_state=1)
   decTree.fit(trainIp,trainOp)
   test_effort = decTree.predict(testIp)[0]
   score += abs(desired_effort - test_effort)/desired_effort
 
+def cart(model, row, rest):
+  train_ip, train_op, test_ip, test_op = formatForCART(model, row, rest)
+  dec_tree = DecisionTreeRegressor(criterion="mse", random_state=1)
+  dec_tree.fit(train_ip,train_op)
+  return dec_tree.predict([test_ip])[0]
   
 def showWeights(model):
   outputStr=""
@@ -219,7 +247,36 @@ def showWeights(model):
     else:
       outputStr += "\t"
   return outputStr.strip()
-  
+
+def loc_dist(m,i,j,
+         what = lambda m: m.decisions):
+  "Euclidean distance 0 <= d <= 1 between decisions"
+  dec_index = what(m)[-1]
+  n1 = norm(m, dec_index, i.cells[dec_index])
+  n2 = norm(m, dec_index, j.cells[dec_index])
+  return abs(n1-n2)
+
+def loc_closest_n(model, n, row, other_rows):
+  tmp = []
+  for other_row in other_rows:
+    if id(row) == id(other_row): continue
+    d = loc_dist(model, row, other_row)
+    tmp += [(d, other_row)]
+  return sorted(tmp)[:n]
+
+def loc_1(model, row, rows):
+  closest_1 = loc_closest_n(model, 1, row, rows)[0][1]
+  return effort(model, closest_1)
+
+def loc_3(model, row, rows):
+  closest_3 = loc_closest_n(model, 3, row, rows)
+  a = effort(model, closest_3[0][1])
+  b = effort(model, closest_3[1][1])
+  c = effort(model, closest_3[2][1])
+  return (50*a + 33*b + 17*c)/100
+
+
+
 def testRig(dataset=MODEL(), 
             doCART = False,doKNN = False, doLinRg = False):
   scores=dict(clstr=N(), lRgCl=N())
@@ -252,24 +309,39 @@ def testRig(dataset=MODEL(),
       n = scores["linRg"]
       n.go and linearRegression(n, dataset, train, test, desired_effort)
   return scores
-  
+
+def average_effort(model, rows):
+  efforts = []
+  for row in rows:
+    efforts.append(effort(model, row))
+  return sum(efforts)/len(efforts)
+
+def effort_error(actual, computed, average):
+  return abs((actual**2 - computed**2)/(actual**2 - average**2))
+  #return abs((actual**2 - computed**2)/(actual**2))
+  #return abs(actual - computed)/actual
+  #return ((actual - computed)/(actual - average))**2
+
 """
 Test Rig to test CoCoMo for
 a particular dataset
 """
 def testCoCoMo(dataset=MODEL(), a=2.94, b=0.91):
-  scores = dict(COCOMO2 = N(), COCONUT= N())
+  coc_scores = dict(COCOMO2 = N(), COCONUT= N())
   tuned_a, tuned_b = CoCoMo.coconut(dataset, dataset._rows)
-  for score in scores.values():
+  for score in coc_scores.values():
     score.go=True
-  for row in dataset._rows:
+  for row, rest in loo(dataset._rows):
     #say('.')
     desired_effort = effort(dataset, row)
+    avg_effort = average_effort(dataset, rest)
     test_effort = CoCoMo.cocomo2(dataset, row.cells, a, b)
     test_effort_tuned = CoCoMo.cocomo2(dataset, row.cells, tuned_a, tuned_b)
-    scores["COCOMO2"] += abs(desired_effort - test_effort)/desired_effort
-    scores["COCONUT"] += abs(desired_effort - test_effort_tuned)/desired_effort
-  return scores
+    #coc_scores["COCOMO2"] += ((desired_effort - test_effort) / (desired_effort - avg_effort))**2
+    coc_scores["COCOMO2"] += effort_error(desired_effort, test_effort, avg_effort)
+    #coc_scores["COCONUT"] += ((desired_effort - test_effort_tuned) / (desired_effort - avg_effort))**2
+    coc_scores["COCONUT"] += effort_error(desired_effort, test_effort_tuned, avg_effort)
+  return coc_scores
         
     
 def testDriver():
@@ -661,8 +733,117 @@ def testNoth(model=MODEL):
   print("```")
   sk.rdivDemo(skData)
   print("```");print("")
-    
+
+def test_sec4_1():
+  """
+  Section 4.1
+  Cocomo vs LOC
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = dict(COCOMO2 = N(), COCONUT = N(), LOC1 = N(), LOC3 = N())
+    tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      loc1_effort = loc_1(model, row, rest)
+      loc3_effort = loc_3(model, row, rest)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["LOC1"] += effort_error(desired_effort, loc1_effort, avg_effort)
+      model_scores["LOC3"] += effort_error(desired_effort, loc3_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+def test_sec4_2_standard():
+  """
+  Section 4.2
+  Cocomo vs TEAK vs PEEKING2
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = dict(COCOMO2 = N(), COCONUT = N(), KNN1 = N(), KNN3 = N(), CART = N())
+    tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      knn1_effort = loc_1(model, row, rest)
+      knn3_effort = loc_3(model, row, rest)
+      cart_effort = cart(model, row, rest)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["KNN1"] += effort_error(desired_effort, knn1_effort, avg_effort)
+      model_scores["KNN3"] += effort_error(desired_effort, knn3_effort, avg_effort)
+      model_scores["CART"]+= effort_error(desired_effort, cart_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+def test_sec4_2_newer():
+  """
+  Section 4.3
+  Choice of Statistical Ranking Methods
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = dict(COCOMO2 = N(), COCONUT = N(), TEAK = N(), PEEKING2 = N())
+    tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      tree_teak = teakImproved(model, rows=rest, verbose=False)
+      teak_effort = cluster_nearest(model, tree_teak, row, leafTeak)
+      tree = launchWhere2(model, rows=rest, verbose=False)
+      peeking_effort = cluster_weighted_mean2(model, tree, row, leaf)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["TEAK"] += effort_error(desired_effort, teak_effort, avg_effort)
+      model_scores["PEEKING2"] += effort_error(desired_effort, peeking_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+
 if __name__ == "__main__":
-  testEverything(albrecht.albrecht)
+  #testEverything(albrecht.albrecht)
   #runAllModels(testEverything)
   #testNoth(MODEL)
+  seed()
+  test_sec4_2_newer()
