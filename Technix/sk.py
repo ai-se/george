@@ -63,7 +63,7 @@ def pairs(lst):
     yield last,i
     last = i
 
-def xtile(lst,lo=0,hi=100,width=40,
+def xtile(num,lo=0,hi=100,width=40,
              #chops=[0.1 ,0.3,0.5,0.7,0.9],
              chops=[0.25,0.5,0.75],
              #marks=[" ","-","-"," "],
@@ -76,6 +76,7 @@ def xtile(lst,lo=0,hi=100,width=40,
   10,30,50,70,90 breaks in the data (but this can be 
   changed- see the optional flags of the function).
   """
+  lst = num.all
   def pos(p)   : return ordered[int(len(ordered)*p)]
   def place(x) : 
     return int(width*float((x - lo))/(hi - lo+0.00001))
@@ -84,7 +85,7 @@ def xtile(lst,lo=0,hi=100,width=40,
   ordered = sorted(lst)
   #lo      = min(lo,ordered[0])
   #hi      = max(hi,ordered[-1])
-  what    = [pos(p)   for p in chops]
+  what    = num.quartiles_noround()
   where   = [place(n) for n in  what]
   out     = [" "] * width
   for one,two in pairs(where):
@@ -160,7 +161,13 @@ class Num:
   def __add__(i,j):
     return Num(i.name + j.name,i.all + j.all)
   def quartiles(i):
-    def p(x) : return int(100*g(xs[x]))
+    def p(x) : return int(round(100*xs[x]))
+    i.median()
+    xs = i.all
+    n  = int(len(xs)*0.25)
+    return p(n) , p(2*n) , p(3*n)
+  def quartiles_noround(i):
+    def p(x) : return round(g(xs[x]), 2)
     i.median()
     xs = i.all
     n  = int(len(xs)*0.25)
@@ -511,23 +518,24 @@ def rdivDemo(data):
   ranks=[]
   maxMedian = -1
   for x in scottknott(data,useA12=True):
+    q1,q2,q3 = x.quartiles()
     maxMedian = max(maxMedian, x.median())
-    ranks += [(x.rank,x.median(),x)]
+    ranks += [(x.rank,q2,q3 - q1, x)]
   all=[]
-  for _,__,x in sorted(ranks): all += x.all
-  #all = sorted(all)
-  all = kill_outliers(sorted(all),maxMedian)
+  for _,__,___,x in sorted(ranks): all += x.all
+  all = sorted(all)
+  #all = kill_outliers(sorted(all),maxMedian)
   lo, hi = all[0], all[-1]
   line = "----------------------------------------------------"
   last = None
-  print  ('%4s , %16s ,    %s   , %4s ' % \
+  print  ('%4s , %22s ,    %s   , %4s ' % \
                ('rank', 'name', 'med', 'iqr'))+ "\n"+ line
-  for _,__,x in sorted(ranks):
+  for _,__,___,x in sorted(ranks, key=lambda a: (a[0], a[1], a[2])):
     q1,q2,q3 = x.quartiles()
     #xtile(x.all,lo=lo,hi=hi,width=30,show="%5.2f")
-    print  ('%1s , %16s , %4s , %4s ' % \
+    print  ('%1s , %22s , %4s , %4s ' % \
                  (x.rank+1, x.name, q2, q3 - q1))  + \
-              xtile(x.all,lo=lo,hi=hi,width=30,show="%5.2f")
+              xtile(x,lo=lo,hi=hi,width=30,show="%5.2f")
     last = x.rank 
 """
 

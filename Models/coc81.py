@@ -99,7 +99,8 @@ def coc81(weighFeature = False,
     'Team',   5.48, 4.38, 3.29, 2.19, 1.01, _ ]],
     weighFeature = weighFeature,
     _split = split,
-    ignores=[22]
+    ignores=[22],
+    is_continuous=[False]*22 + [True]
     )
 """
 

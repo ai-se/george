@@ -11,6 +11,8 @@ import Technix.sdivUtil as sdivUtil
 from Technix.smote import smote
 from Technix.batman import smotify
 from Technix.TEAK import teak, leafTeak, teakImproved
+from Technix.atlm import lin_reg
+from Technix.atlm_pruned import lin_reg_pruned
 from Models import *
 MODEL = nasa93.nasa93
 """
@@ -318,6 +320,7 @@ def average_effort(model, rows):
 
 def effort_error(actual, computed, average):
   return abs((actual**2 - computed**2)/(actual**2 - average**2))
+  #return actual - computed
   #return abs((actual**2 - computed**2)/(actual**2))
   #return abs(actual - computed)/actual
   #return ((actual - computed)/(actual - average))**2
@@ -342,7 +345,13 @@ def testCoCoMo(dataset=MODEL(), a=2.94, b=0.91):
     #coc_scores["COCONUT"] += ((desired_effort - test_effort_tuned) / (desired_effort - avg_effort))**2
     coc_scores["COCONUT"] += effort_error(desired_effort, test_effort_tuned, avg_effort)
   return coc_scores
-        
+
+def pruned_coconut(model, row, rows, row_count, column_ratio, noise=None):
+  pruned_rows, columns = CoCoMo.prune_cocomo(model, rows, row_count, column_ratio)
+  a_tuned, b_tuned = CoCoMo.coconut(model, pruned_rows, decisions=columns, noise=noise)
+  return CoCoMo.cocomo2(model, row.cells, a=a_tuned, b=b_tuned, decisions=columns, noise=noise), pruned_rows
+
+
     
 def testDriver():
   seed(0)
@@ -840,10 +849,217 @@ def test_sec4_2_newer():
     sk.rdivDemo(sk_data)
     print("```");print("")
 
+def test_sec4_3():
+  """
+  Section 4.3
+  Choice of Statistical Ranking Methods
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = {
+      "COCOMO2" : N(),
+      "COCONUT" : N(),
+      "COCONUT:c0.25,r4" : N(),
+      "COCONUT:c0.25,r8" : N(),
+      "COCONUT:c0.5,r4" : N(),
+      "COCONUT:c0.5,r8" : N(),
+      "COCONUT:c1,r4" : N(),
+      "COCONUT:c1,r8" : N(),
+    }
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      tuned_a, tuned_b = CoCoMo.coconut(model, rest)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 4, 0.25)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.25,r4"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.25)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.25,r8"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 4, 0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r4"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 4, 1)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c1,r4"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 1)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c1,r8"] += effort_error(desired_effort, pruned_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+def test_sec4_4():
+  """
+  Section 4.4
+  COCOMO with Incorrect Size Estimates
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = {
+      "COCOMO2" : N(),
+      "COCOMO2:n/2" : N(),
+      "COCOMO2:n/4" : N(),
+      "COCONUT:c0.5,r8" : N(),
+      "COCONUT:c0.5,r8,n/2" : N(),
+      "COCONUT:c0.5,r8,n/4" : N(),
+    }
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.5)
+      model_scores["COCOMO2:n/2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.25)
+      model_scores["COCOMO2:n/4"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,n/2"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=0.25)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,n/4"] += effort_error(desired_effort, pruned_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+
+def test_baseline():
+  """
+  Section 4.3
+  Choice of Statistical Ranking Methods
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = dict(COCOMO2 = N(),
+                        COCONUT = N(),
+                        TEAK = N(),
+                        PEEKING2 = N(),
+                        BASELINE = N())
+    tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
+    for score in model_scores.values():
+      score.go=True
+    actuals = []
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      actuals.append(desired_effort)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      tree_teak = teakImproved(model, rows=rest, verbose=False)
+      teak_effort = cluster_nearest(model, tree_teak, row, leafTeak)
+      tree = launchWhere2(model, rows=rest, verbose=False)
+      peeking_effort = cluster_weighted_mean2(model, tree, row, leaf)
+      baseline_effort = lin_reg(model, row, rest)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["TEAK"] += effort_error(desired_effort, teak_effort, avg_effort)
+      model_scores["PEEKING2"] += effort_error(desired_effort, peeking_effort, avg_effort)
+      model_scores["BASELINE"] += effort_error(desired_effort, baseline_effort, avg_effort)
+    print("### %s"%model_fn.__name__)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+    # var_actuals = np.var(actuals)
+    # for key, n in model_scores.items():
+    #   var_model = np.var(n.cache.all)
+    #   sk_data.append((var_model/var_actuals,key))
+    # sk_data = sorted(sk_data)
+    # print("```")
+    # line = "----------------------------------------------------"
+    # print ('%4s , %22s ,    %s' % \
+    #              ('rank', 'name', 'error')+ "\n"+ line)
+    # for index, (error, key) in enumerate(sk_data):
+    #   print("%4d , %22s ,   %0.4f"%(index+1, key, error))
+    # print("```");print("")
+
+def test_pruned_baseline():
+  """
+  Section 4.4
+  COCOMO with Incorrect Size Estimates
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = {
+      "COCOMO2" : N(),
+      "COCONUT" : N(),
+      "BASELINE" : N(),
+      "P_BASELINE" : N(),
+      "CART" : N()
+    }
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      a_tuned, b_tuned = CoCoMo.coconut(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, a_tuned, b_tuned)
+      baseline_effort = lin_reg(model, row, rest)
+      baseline_pruned_effort = lin_reg_pruned(model, row, rest)
+      cart_effort = cart(model, row, rest)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["BASELINE"] += effort_error(desired_effort, baseline_effort, avg_effort)
+      model_scores["P_BASELINE"] += effort_error(desired_effort, baseline_pruned_effort, avg_effort)
+      model_scores["CART"] += effort_error(desired_effort, cart_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
 
 if __name__ == "__main__":
   #testEverything(albrecht.albrecht)
   #runAllModels(testEverything)
   #testNoth(MODEL)
   seed()
-  test_sec4_2_newer()
+  #test_sec4_4()
+  #test_baseline()
+  test_pruned_baseline()
+
+

@@ -129,7 +129,8 @@ def nasa93(weighFeature = False, split = "median"):
     weighFeature = weighFeature,
     _split = split,
     _dataTypes = [int]*22 + [float]*4,
-    ignores=[22]
+    ignores=[22],
+    is_continuous=[False]*22 + [True]
     )
 """
 

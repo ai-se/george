@@ -256,7 +256,7 @@ Code:
 def data(indep=[], less=[], more=[], _rows=[],
          _tunings=[],weighFeature=True,
          _split="variance",_isCocomo = True,
-         _dataTypes = None, ignores=[]):
+         _dataTypes = None, ignores=[], is_continuous=None):
   nindep= len(indep)
   ndep  = len(less) + len(more)
   m= o(lo={}, hi={}, w={}, 
@@ -276,6 +276,7 @@ def data(indep=[], less=[], more=[], _rows=[],
   m.decisions  = [x for x in range(nindep)]
   m.objectives = [nindep+ x for x in range(ndep)]
   m.cols       = m.decisions + m.objectives
+  m.is_continuous = is_continuous
   
   for x in m.decisions : 
     m.w[x]=  1
