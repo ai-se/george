@@ -64,7 +64,8 @@ def albrecht(weighFeature = False,
     weighFeature = weighFeature,
     _split = split,
     _isCocomo = False,
-    ignores=[4,5,6]
+    #ignores=[4,5,6],
+    is_continuous=[True]*7
     )
 
 def _albrecht(): print(albrecht())

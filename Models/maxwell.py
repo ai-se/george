@@ -124,7 +124,8 @@ def maxwell(weighFeature = False,
     weighFeature = weighFeature,
     _split = split,
     _isCocomo = False,
-    ignores=[24]
+    ignores=[24],
+    is_continuous=[True]+[False]*22+[True]*3
     )
 
 def _maxwell(): print(maxwell())

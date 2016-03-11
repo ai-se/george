@@ -36,7 +36,7 @@ def china(weighFeature = False,
   return data(indep= [ 
      # 0..15
      'AFP','Input','Output','Enquiry','File','Interface','Added','Changed','Deleted',
-     'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP', 'Resource', 'Dev.Type', 'Duration'],
+     'PDR_AFP', 'PDR_UFP', 'NPDR_AFP', 'NPDU_UFP', 'Resource', 'Dev_Type', 'Duration'],
     less = ['Effort', 'N_effort'],
     _rows=[
       [1587,774,260,340,128,0,1502,0,0,4.7,5,4.7,5,4,0,4,7490,7490],
@@ -550,7 +550,8 @@ def china(weighFeature = False,
     weighFeature = weighFeature,
     _split = split,
     _isCocomo = False,
-    ignores=[9,10,11,12]
+    #ignores=[9,10,11,12],
+    is_continuous=[True]*16
     )
 
 def _china(): print(china())

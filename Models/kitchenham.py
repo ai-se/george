@@ -185,7 +185,8 @@ def kitchenham(weighFeature = False,
     weighFeature = weighFeature,
     _split = split,
     _isCocomo = False,
-    ignores=[3]
+    ignores=[3],
+    is_continuous=[False, False, True, True, True, False]
     )
 
 def _kitchenham(): print(kitchenham())

@@ -24,7 +24,7 @@ def miyazaki(weighFeature = False,
            split = "median"):
   vl=1;l=2;n=3;h=4;vh=5;xh=6;_=0
   return data(indep= [ 
-     # 0..5
+     # 0..6
      'KLOC','SCRN','FORM','FILE','ESCRN','EFORM', 'EFILE'],
     less = ['MM'],
     _rows=[
@@ -88,7 +88,8 @@ def miyazaki(weighFeature = False,
     weighFeature = weighFeature,
     _split = split,
     _isCocomo = False,
-    ignores=[0]
+    ignores=[0],
+    is_continuous=[True]*7
     )
 
 def _miyazaki(): print(miyazaki())

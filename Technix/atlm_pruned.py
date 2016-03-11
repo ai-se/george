@@ -15,7 +15,7 @@ def make_formula(model, col_names):
   labels = []
   for index, col_name in enumerate(model.indep):
     if col_name not in col_names: continue
-    if index == model.decisions[-1]:
+    if model.is_continuous[index]:
       labels.append(col_name)
     else:
       labels.append("C(%s, levels=[0,1,2,3,4,5,6])"%col_name)
@@ -26,7 +26,7 @@ def make_formula(model, col_names):
 def lin_reg_pruned(model, test_row, rows):
   headers = model.indep + model.less
   train_data = [row.cells[:] for row in rows]
-  continuous_variables = [len(model.indep)-1]
+  continuous_variables = [decision for decision in model.decisions if model.is_continuous[decision]]
   transforms = get_transform_funcs(train_data, continuous_variables)
   for row in train_data:
     transform_row(row, continuous_variables, transforms)
@@ -77,7 +77,10 @@ def transform_row(row, cols, transforms):
 def log_transform(vector):
   transforms = []
   for one in vector:
-    transforms.append(math.log(one))
+    if one == 0:
+      transforms.append(-float("inf"))
+    else:
+      transforms.append(math.log(one))
   return transforms
 
 def sqrt_transform(vector):

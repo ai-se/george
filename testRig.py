@@ -1053,6 +1053,46 @@ def test_pruned_baseline():
     print("```");print("")
 
 
+def test_pruned_baseline_continuous():
+  """
+  Section 4.4
+  COCOMO with Incorrect Size Estimates
+  :param model:
+  :return:
+  """
+  models = [albrecht.albrecht, kitchenham.kitchenham, maxwell.maxwell, miyazaki.miyazaki, china.china]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = {
+      "BASELINE" : N(),
+      "P_BASELINE" : N(),
+      "CART" : N(),
+      "TEAK": N()
+    }
+    for score in model_scores.values():
+      score.go=True
+    print("### %s"%model_fn.__name__)
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      baseline_effort = lin_reg(model, row, rest)
+      baseline_pruned_effort = lin_reg_pruned(model, row, rest)
+      cart_effort = cart(model, row, rest)
+      tree_teak = teakImproved(model, rows=rest, verbose=False)
+      teak_effort = cluster_nearest(model, tree_teak, row, leafTeak)
+      model_scores["BASELINE"] += effort_error(desired_effort, baseline_effort, avg_effort)
+      model_scores["P_BASELINE"] += effort_error(desired_effort, baseline_pruned_effort, avg_effort)
+      model_scores["CART"] += effort_error(desired_effort, cart_effort, avg_effort)
+      model_scores["TEAK"] += effort_error(desired_effort, teak_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+
 if __name__ == "__main__":
   #testEverything(albrecht.albrecht)
   #runAllModels(testEverything)
@@ -1060,6 +1100,6 @@ if __name__ == "__main__":
   seed()
   #test_sec4_4()
   #test_baseline()
-  test_pruned_baseline()
+  test_pruned_baseline_continuous()
 
 

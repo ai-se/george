@@ -12,23 +12,26 @@ warnings.filterwarnings("ignore")
 __author__ = 'panzer'
 
 def make_formula(model):
-  formula = ""
-  for col_name in model.indep[:-1]:
-    formula += "C(%s, levels=[0,1,2,3,4,5,6]) + "%col_name
-  formula += model.indep[-1]
-  formula = "%s ~ %s"%(model.less[0], formula)
+  labels = []
+  for index, col_name in enumerate(model.indep):
+    if model.is_continuous[index]:
+      labels.append(col_name)
+    else:
+      labels.append("C(%s, levels=[0,1,2,3,4,5,6])"%col_name)
+  formula = "%s ~ %s"%(model.less[0], " + ".join(labels))
   return formula
 
 
 def lin_reg(model, test_row, rows):
   headers = model.indep + model.less
   train_data = [row.cells[:] for row in rows]
-  continuous_variables = [len(model.indep)-1]
+  continuous_variables = [decision for decision in model.decisions if model.is_continuous[decision]]
   transforms = get_transform_funcs(train_data, continuous_variables)
   for row in train_data:
     transform_row(row, continuous_variables, transforms)
   df = pandas.DataFrame(train_data, columns=headers)
-  lin_model = smf.ols(formula=make_formula(model), data=df).fit()
+  ols = smf.ols(formula=make_formula(model), data=df)
+  lin_model = ols.fit()
   test_data = transform_row(test_row.cells[:], continuous_variables, transforms)
   df_test = pandas.DataFrame([test_data], columns=headers)
   return lin_model.predict(df_test)[0]
@@ -61,7 +64,10 @@ def transform_row(row, cols, transforms):
 def log_transform(vector):
   transforms = []
   for one in vector:
-    transforms.append(math.log(one))
+    if one == 0:
+      transforms.append(-float("inf"))
+    else:
+      transforms.append(math.log(one))
   return transforms
 
 def sqrt_transform(vector):
