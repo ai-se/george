@@ -277,7 +277,11 @@ def loc_3(model, row, rows):
   c = effort(model, closest_3[2][1])
   return (50*a + 33*b + 17*c)/100
 
-
+def productivity(model, row, rows):
+  loc_index = model.decisions[-1]
+  productivities = [effort(model, row)/one.cells[loc_index] for one in rows]
+  avg_productivity = sum(productivities)/len(productivities)
+  return avg_productivity*row.cells[loc_index]
 
 def testRig(dataset=MODEL(), 
             doCART = False,doKNN = False, doLinRg = False):
@@ -1093,6 +1097,107 @@ def test_pruned_baseline_continuous():
     print("```");print("")
 
 
+def test_sec_kloc_error():
+  """
+  Section 4.4
+  COCOMO with Incorrect Size Estimates
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = {
+      "COCOMO2" : N(),
+      "COCOMO2:n/2" : N(),
+      "COCOMO2:n/4" : N(),
+      "COCOMO2:2*n" : N(),
+      "COCOMO2:4*n" : N(),
+      "COCONUT:c0.5,r8" : N(),
+      "COCONUT:c0.5,r8,n/2" : N(),
+      "COCONUT:c0.5,r8,n/4" : N(),
+      "COCONUT:c0.5,r8,2*n" : N(),
+      "COCONUT:c0.5,r8,4*n" : N(),
+    }
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.5)
+      model_scores["COCOMO2:n/2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.25)
+      model_scores["COCOMO2:n/4"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=2)
+      model_scores["COCOMO2:2*n"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=4)
+      model_scores["COCOMO2:4*n"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=0.5)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,n/2"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=0.25)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,n/4"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=2)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,2*n"] += effort_error(desired_effort, pruned_effort, avg_effort)
+      pruned_effort, pruned_rows = pruned_coconut(model, row, rest, 8, 0.5, noise=4)
+      avg_effort = average_effort(model, pruned_rows)
+      model_scores["COCONUT:c0.5,r8,4*n"] += effort_error(desired_effort, pruned_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+
+def test_sec4_1_productivity():
+  """
+  Updated Section 4.1
+  Cocomo vs LOC vs Productivity
+  :param model:
+  :return:
+  """
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    model_scores = dict(COCOMO2 = N(), COCONUT = N(),
+                        LOC1 = N(), LOC3 = N(),
+                        PROD = N())
+    tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
+    for score in model_scores.values():
+      score.go=True
+    for row, rest in loo(model._rows):
+      #say('.')
+      desired_effort = effort(model, row)
+      avg_effort = average_effort(model, rest)
+      cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+      coconut_effort = CoCoMo.cocomo2(model, row.cells, tuned_a, tuned_b)
+      loc1_effort = loc_1(model, row, rest)
+      loc3_effort = loc_3(model, row, rest)
+      prod_effort = productivity(model, row, rest)
+      model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
+      model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
+      model_scores["LOC1"] += effort_error(desired_effort, loc1_effort, avg_effort)
+      model_scores["LOC3"] += effort_error(desired_effort, loc3_effort, avg_effort)
+      model_scores["PROD"] += effort_error(desired_effort, prod_effort, avg_effort)
+    sk_data = []
+    for key, n in model_scores.items():
+      sk_data.append([key] + n.cache.all)
+    print("### %s"%model_fn.__name__)
+    print("```")
+    sk.rdivDemo(sk_data)
+    print("```");print("")
+
+
 if __name__ == "__main__":
   #testEverything(albrecht.albrecht)
   #runAllModels(testEverything)
@@ -1100,6 +1205,8 @@ if __name__ == "__main__":
   seed()
   #test_sec4_4()
   #test_baseline()
-  test_pruned_baseline_continuous()
+  #test_pruned_baseline_continuous()
+  #test_sec_kloc_error()
+  test_sec4_1_productivity()
 
 

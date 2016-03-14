@@ -62,7 +62,7 @@ def cocomo2(dataset, project,
     kloc_val = project[kloc]
   else:
     r = random.random()
-    kloc_val = project[kloc] * ((1 - noise) + (2*noise*r))
+    kloc_val = project[kloc] * (abs(1 - noise) + (2*noise*r))
   return a * ems * kloc_val ** (b + 0.01*sfs)
 
 
