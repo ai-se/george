@@ -1207,6 +1207,7 @@ if __name__ == "__main__":
   #test_baseline()
   #test_pruned_baseline_continuous()
   #test_sec_kloc_error()
-  test_sec4_1_productivity()
+  #test_sec4_1_productivity()
+  test_sec4_1()
 
 

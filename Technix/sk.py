@@ -316,7 +316,7 @@ The rest is just details:
 + For more details see [the Efron text][efron01].  
 
 """
-def bootstrap(y0,z0,conf=0.01,b=1000):
+def bootstrap(y0,z0,conf=0.05,b=1000):
   """The bootstrap hypothesis test from
      p220 to 223 of Efron's book 'An
     introduction to the boostrap."""
@@ -392,6 +392,7 @@ the effect size test (and only go to bootstrapping in effect size passes:
 def different(l1,l2):
   #return bootstrap(l1,l2) and a12(l2,l1)
   return a12(l2,l1) and bootstrap(l1,l2)
+  #return a12(l2,l1)
 
 """
 
