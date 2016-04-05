@@ -791,7 +791,7 @@ def test_sec4_2_standard():
   models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
   for model_fn in models:
     model = model_fn()
-    model_scores = dict(COCOMO2 = N(), COCONUT = N(), KNN1 = N(), KNN3 = N(), CART = N())
+    model_scores = dict(COCOMO2 = N(), COCONUT = N(), KNN1 = N(), KNN3 = N(), CART = N(), ATLM = N())
     tuned_a, tuned_b = CoCoMo.coconut(model, model._rows)
     for score in model_scores.values():
       score.go=True
@@ -804,11 +804,13 @@ def test_sec4_2_standard():
       knn1_effort = loc_1(model, row, rest)
       knn3_effort = loc_3(model, row, rest)
       cart_effort = cart(model, row, rest)
+      baseline_effort = lin_reg(model, row, rest)
       model_scores["COCOMO2"] += effort_error(desired_effort, cocomo_effort, avg_effort)
       model_scores["COCONUT"] += effort_error(desired_effort, coconut_effort, avg_effort)
       model_scores["KNN1"] += effort_error(desired_effort, knn1_effort, avg_effort)
       model_scores["KNN3"] += effort_error(desired_effort, knn3_effort, avg_effort)
       model_scores["CART"]+= effort_error(desired_effort, cart_effort, avg_effort)
+      model_scores["ATLM"]+= effort_error(desired_effort, baseline_effort, avg_effort)
     sk_data = []
     for key, n in model_scores.items():
       sk_data.append([key] + n.cache.all)
@@ -1208,6 +1210,6 @@ if __name__ == "__main__":
   #test_pruned_baseline_continuous()
   #test_sec_kloc_error()
   #test_sec4_1_productivity()
-  test_sec4_4()
+  test_sec4_2_newer()
 
 

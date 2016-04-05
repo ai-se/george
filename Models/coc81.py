@@ -5,8 +5,9 @@ Standard header:
 
 """
 from __future__ import division,print_function
-import  sys
+import  sys, os
 sys.dont_write_bytecode = True
+sys.path.append(os.path.abspath("."))
 from  lib import *
 """
 
@@ -109,4 +110,5 @@ Demo code:
 """
 def _coc81(): print(coc81())
 
-#if __name__ == '__main__': eval(todo('_nasa93()'))
+if __name__ == '__main__':
+  to_csv(coc81(), "coc81")

@@ -292,6 +292,16 @@ def data(indep=[], less=[], more=[], _rows=[],
     sdivUtil.fss(m)
   return m
 
+def to_csv(model, name):
+  import csv
+  rows = [model.indep + model.less + model.more]
+  for row in model._rows:
+    rows.append(row.cells)
+  with open("%s.csv"%name, "w") as f:
+    writer = csv.writer(f)
+    writer.writerows(rows)
+
+
 """
 Add tuning coeffecients to LOC
 """
