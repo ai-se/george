@@ -60,7 +60,7 @@ def loc_error():
   ax.set_title('MRE for effort while varying LOC in different datasets')
   ax.set_xticks(np.arange(len(datasets)) + len(methods)*width/2 + padding/2)
   ax.set_xticklabels(datasets)
-  ax.legend(blocks, methods, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=3, fontsize=7, fancybox=True, shadow=True)
+  ax.legend(blocks, methods, loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=3, fontsize=9, fancybox=True, shadow=True)
   plt.savefig("loc_paper/mre.png", bbox_inches='tight',dpi=100)
   plt.clf()
 
