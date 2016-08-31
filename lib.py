@@ -10,6 +10,7 @@ import  sys,random,math
 sys.dont_write_bytecode = True
 from settings import *
 import Technix.sdivUtil as sdivUtil
+import numpy as np
 """
 
 ## Simple, low-level stuff
@@ -55,6 +56,10 @@ class N():
       return 0
     else:       
       return (max(0,i.m2)/(i.n - 1))**0.5
+  def med(i):
+    return np.median(i.cache.all)
+  def iqr(i):
+    return np.subtract(*np.percentile(i.cache.all, [75, 25]))
   def __iadd__(i,x):
     i.cache += x
     i.n     += 1

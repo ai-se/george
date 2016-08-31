@@ -64,4 +64,65 @@ def loc_error():
   plt.savefig("loc_paper/mre.png", bbox_inches='tight',dpi=100)
   plt.clf()
 
-loc_error()
+
+def loc_error_sa():
+  data = OrderedDict([
+    ("COCOMO2", {
+      "NASA10": (43, 1),
+      "COC05": (13, 1),
+      "NASA93": (14, 1),
+      "COC81": (3, 0)
+    }), ("20%:COCOMO2", {
+      "NASA10": (41, 13),
+      "COC05": (14, 8),
+      "NASA93": (14, 5),
+      "COC81": (4, 2)
+    }), ("40%:COCOMO2", {
+      "NASA10": (41, 28),
+      "COC05": (19, 14),
+      "NASA93": (15, 8),
+      "COC81": (4, 4)
+    }), ("60%:COCOMO2", {
+      "NASA10": (46, 34),
+      "COC05": (25, 25),
+      "NASA93": (16, 12),
+      "COC81": (6, 6)
+    }), ("80%:COCOMO2", {
+      "NASA10": (50, 44),
+      "COC05": (24, 25),
+      "NASA93": (20, 13),
+      "COC81": (6, 7)
+    }), ("100%:COCOMO2", {
+      "NASA10": (68, 49),
+      "COC05": (26, 30),
+      "NASA93": (27, 19),
+      "COC81": (8, 8)
+    })
+  ])
+  methods = data.keys()
+  padding = 0.15
+  width = (1-padding) / len(methods)
+  fig, ax = plt.subplots()
+  datasets = ["NASA10", "COC05", "NASA93", "COC81"]
+  colors = ['b', 'm', 'g', 'c', 'r', 'y']
+  blocks = []
+  for i, method in enumerate(methods):
+    ind = np.arange(len(datasets))
+    means = []
+    variances = []
+    for dataset in datasets:
+      means.append(data[method][dataset][0])
+      variances.append(data[method][dataset][1])
+    rects = ax.bar((ind + i*width) + padding/2, means, width, color=colors[i], yerr=variances, ecolor='k')
+    blocks.append(rects[0])
+  ax.set_ylabel('Standardized Accuracy %')
+  ax.set_ylim(0, 120)
+  ax.set_xlabel('Datasets')
+  ax.set_title('SA for effort while varying LOC in different datasets')
+  ax.set_xticks(np.arange(len(datasets)) + len(methods)*width/2 + padding/2)
+  ax.set_xticklabels(datasets)
+  ax.legend(blocks, methods, loc='upper center', bbox_to_anchor=(0.5, 1.18), ncol=3, fontsize=9, fancybox=True, shadow=True)
+  plt.savefig("loc_paper/sa.png", bbox_inches='tight',dpi=100)
+  plt.clf()
+
+loc_error_sa()

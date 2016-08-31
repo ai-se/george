@@ -329,6 +329,32 @@ def effort_error(actual, computed, average):
   #return abs(actual - computed)/actual
   #return ((actual - computed)/(actual - average))**2
 
+
+def sa(*args):
+  """
+  Shepperd and MacDonell's standardized error.
+  SA = 1 - MAR/MARp0
+  :param args: [actual, predicted, vector]
+  :return: SA
+  """
+  mar = abs(args[0] - args[1])
+  mar_p0 = sum([abs(random.choice(args[2])-args[0]) for _ in range(1000)])/1000
+  return mar/mar_p0
+
+def msa(*args):
+  """
+  Mean Standard Accuracy Error
+  :param args: [[actual vals], [predicted vals], [all effort]]
+  :return:
+  """
+  errors = []
+  for actual, predicted in zip(args[0], args[1]):
+    errors.append(sa(actual, predicted, args[2]))
+  return np.median(errors)
+
+
+
+
 """
 Test Rig to test CoCoMo for
 a particular dataset
@@ -1200,6 +1226,78 @@ def test_sec4_1_productivity():
     print("```");print("")
 
 
+def test_loc_paper():
+  models = [Mystery1.Mystery1, Mystery2.Mystery2, nasa93.nasa93, coc81.coc81]
+  for model_fn in models:
+    model = model_fn()
+    med_model_scores = {"COCOMO2": N(), "20%:COCOMO2": N(),
+                    "40%:COCOMO2": N(), "60%:COCOMO2": N(),
+                    "80%:COCOMO2": N(), "100%:COCOMO2": N()}
+    iqr_model_scores = {"COCOMO2": N(), "20%:COCOMO2": N(),
+                        "40%:COCOMO2": N(), "60%:COCOMO2": N(),
+                        "80%:COCOMO2": N(), "100%:COCOMO2": N()}
+    for score1, score2 in zip(med_model_scores.values(), iqr_model_scores.values()):
+      score1.go = True
+      score2.go = True
+    for row, rest in loo(model._rows):
+      # say('.')
+      all_efforts = [effort(model, one) for one in rest]
+      desired_effort = effort(model, row)
+      # 0 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["COCOMO2"] += errors.med()
+      iqr_model_scores["COCOMO2"] += errors.iqr()
+      # 20 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.2)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["20%:COCOMO2"] += errors.med()
+      iqr_model_scores["20%:COCOMO2"] += errors.iqr()
+      # 40 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.4)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["40%:COCOMO2"] += errors.med()
+      iqr_model_scores["40%:COCOMO2"] += errors.iqr()
+      # 60 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.6)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["60%:COCOMO2"] += errors.med()
+      iqr_model_scores["60%:COCOMO2"] += errors.iqr()
+      # 80 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=0.8)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["80%:COCOMO2"] += errors.med()
+      iqr_model_scores["80%:COCOMO2"] += errors.iqr()
+      # 100 %
+      errors = N()
+      for _ in xrange(20):
+        cocomo_effort = CoCoMo.cocomo2(model, row.cells, noise=1.0)
+        errors += sa(desired_effort, cocomo_effort, all_efforts)
+      med_model_scores["100%:COCOMO2"] += errors.med()
+      iqr_model_scores["100%:COCOMO2"] += errors.iqr()
+    med_sk_data, iqr_sk_data = [], []
+    for key in med_model_scores.keys():
+      med_sk_data.append([key] + med_model_scores[key].cache.all)
+      iqr_sk_data.append([key] + iqr_model_scores[key].cache.all)
+    print("### %s" % model_fn.__name__)
+    print("```")
+    sk.rdivDemo(med_sk_data)
+    print("")
+    sk.rdivDemo(iqr_sk_data)
+    print("```")
+    print("")
+
+
 if __name__ == "__main__":
   #testEverything(albrecht.albrecht)
   #runAllModels(testEverything)
@@ -1210,6 +1308,5 @@ if __name__ == "__main__":
   #test_pruned_baseline_continuous()
   #test_sec_kloc_error()
   #test_sec4_1_productivity()
-  test_sec4_2_newer()
-
-
+  # test_sec4_2_newer()
+  test_loc_paper()
